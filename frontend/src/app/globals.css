@@ -964,3 +964,195 @@ h3.sec {
 .foot b {
   color: var(--gold);
 }
+
+/* ============================================================================
+   TuT AI — Obsidian & Pearl Design System Tokens & Components
+   ========================================================================== */
+@property --a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes spinA {
+  to {
+    --a: 360deg;
+  }
+}
+
+:root {
+  --bg-obsidian: #000000;
+  --bg-page: #050607;
+  --field: #08090b;
+  --card-top: #0b0c0f;
+  --card-bottom: #050607;
+  --line-pearl: rgba(255, 255, 255, 0.09);
+  --tx-pearl: #f3f1ea;
+  --mu-pearl: #a9afb9;
+  --ac-pearl: #efece4;
+  --pearl-1: #bfe0ff;
+  --pearl-2: #e9cfff;
+  --pearl-3: #ffe6c2;
+  --pearl-4: #ffffff;
+  --r-field: 12px;
+  --r-card: 16px;
+  --r-window: 24px;
+}
+
+#tx, .grain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#tx {
+  z-index: 0;
+}
+
+.grain {
+  z-index: 1;
+  opacity: 0.08;
+  mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* Pearl-edge button */
+.go, .btn-pearl {
+  all: unset;
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--tx-pearl);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition: transform 0.15s, box-shadow 0.3s, letter-spacing 0.3s;
+}
+
+.go::before, .btn-pearl::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 13px;
+  z-index: -2;
+  background: conic-gradient(from var(--a), rgba(255, 255, 255, 0.07) 0deg, rgba(255, 255, 255, 0.07) 190deg, #bfe0ff 240deg, #e9cfff 280deg, #ffe6c2 315deg, #ffffff 338deg, rgba(255, 255, 255, 0.07) 360deg);
+  animation: spinA 5s linear infinite;
+}
+
+.go::after, .btn-pearl::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  z-index: -1;
+  background: radial-gradient(130px circle at var(--bx, 50%) var(--by, 50%), rgba(255, 255, 255, 0.16), transparent 70%), repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 7px), linear-gradient(#0c0d10, #040506);
+}
+
+.go:hover, .btn-pearl:hover {
+  letter-spacing: 0.03em;
+  box-shadow: 0 14px 44px -12px rgba(190, 215, 255, 0.4);
+}
+
+.go:hover::before, .btn-pearl:hover::before {
+  animation-duration: 1.8s;
+}
+
+.go:active, .btn-pearl:active {
+  transform: scale(0.985);
+}
+
+.go:focus-visible, .btn-pearl:focus-visible {
+  box-shadow: 0 0 0 4px rgba(239, 236, 228, 0.3);
+}
+
+/* Obsidian Card */
+.card-obsidian {
+  all: unset;
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  cursor: pointer;
+  padding: 18px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 176px;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+
+.card-obsidian::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 17px;
+  z-index: -2;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.3s;
+}
+
+.card-obsidian::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  z-index: -1;
+  background: radial-gradient(170px circle at var(--bx, 50%) var(--by, 0%), rgba(255, 255, 255, 0.09), transparent 70%), linear-gradient(#0b0c0f, #050607);
+}
+
+.card-obsidian:hover {
+  transform: translateY(-3px);
+}
+
+.card-obsidian:hover::before {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.card-obsidian.active::before, .card-obsidian.on::before {
+  background: conic-gradient(from var(--a), rgba(255, 255, 255, 0.08) 0deg, rgba(255, 255, 255, 0.08) 190deg, #bfe0ff 240deg, #e9cfff 280deg, #ffe6c2 315deg, #ffffff 338deg, rgba(255, 255, 255, 0.08) 360deg);
+  animation: spinA 5s linear infinite;
+}
+
+/* Sidebar obsidian styling */
+aside.sidebar-obsidian {
+  background: linear-gradient(#030405, #000000) !important;
+  border-right: 1px solid var(--line-pearl) !important;
+}
+
+/* Brand icon pearl ring */
+.brand-icon-pearl {
+  box-shadow: 0 0 0 1px rgba(239, 236, 228, 0.3), 0 0 22px -6px rgba(190, 215, 255, 0.4) !important;
+}
+
+/* Dark scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) #000000;
+}
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(239, 236, 228, 0.4);
+}
+

@@ -43,7 +43,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
   return (
     <>
       <Card 
-        className="group card-hover"
+        className="group card-hover card-obsidian border-[var(--line-pearl)]"
         onClick={handleCardClick}
         style={{ cursor: 'pointer' }}
       >

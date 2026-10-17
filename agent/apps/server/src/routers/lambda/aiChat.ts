@@ -25,6 +25,7 @@ import { unwrapPgError } from '@/server/modules/AgentRuntime/pgError';
 import { resolveContext } from '@/server/routers/lambda/_helpers/resolveContext';
 import { AiChatService } from '@/server/services/aiChat';
 import { AiGenerationService } from '@/server/services/aiGeneration';
+import { DocumentService } from '@/server/services/document';
 import { FileService } from '@/server/services/file';
 import { archiveToolResultIfNeeded } from '@/server/services/toolExecution/archiveToolResult';
 
@@ -134,6 +135,7 @@ const aiChatProcedure = wsCompatProcedure.use(serverDatabase).use(async (opts) =
       agentModel: new AgentModel(ctx.serverDB, ctx.userId, wsId),
       aiChatService: new AiChatService(ctx.serverDB, ctx.userId, wsId),
       aiGenerationService: new AiGenerationService(ctx.serverDB, ctx.userId, wsId),
+      documentService: new DocumentService(ctx.serverDB, ctx.userId, wsId),
       fileService: new FileService(ctx.serverDB, ctx.userId, wsId),
       messageModel: new MessageModel(ctx.serverDB, ctx.userId, wsId),
       threadModel: new ThreadModel(ctx.serverDB, ctx.userId, wsId),
@@ -494,6 +496,14 @@ export const aiChatRouter = router({
       log('user message created with id: %s', messageId);
 
       log('assistant message created with id: %s', assistantMessageItem.id);
+
+      // Parse attached files into documents table so content is populated in documentsMap
+      if (input.newUserMessage.files && input.newUserMessage.files.length > 0) {
+        log('parsing attached files before query: %O', input.newUserMessage.files);
+        await Promise.allSettled(
+          input.newUserMessage.files.map((fileId) => ctx.documentService.parseFile(fileId)),
+        );
+      }
 
       // retrieve latest messages and topic with
       log('retrieving messages and topics');

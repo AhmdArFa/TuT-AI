@@ -15,10 +15,10 @@ import {
  * whole topic keeps failing afterwards. Context compression cannot help: the latest user message
  * is always kept intact.
  */
-export const FILE_INLINE_MAX_CHARS = 100_000;
+export const FILE_INLINE_MAX_CHARS = 500_000;
 
 /** Leading characters kept as a preview when an attachment exceeds `FILE_INLINE_MAX_CHARS`. */
-export const FILE_PREVIEW_CHARS = 4000;
+export const FILE_PREVIEW_CHARS = 50_000;
 
 /** The exact `readAttachment` call that continues reading `fileId` from a 1-based line. */
 export const readAttachmentContinuation = (fileId: string) => (line: number) =>

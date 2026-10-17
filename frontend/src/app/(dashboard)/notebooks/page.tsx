@@ -96,7 +96,7 @@ export default function NotebooksPage() {
             </div>
             <button
               type="button"
-              className="btn"
+              className="btn go btn-pearl"
               onClick={() => setCreateDialogOpen(true)}
             >
               <svg className="i" viewBox="0 0 24 24" style={{ width: 16 }}>
@@ -110,7 +110,7 @@ export default function NotebooksPage() {
           {recentItems.length > 0 && (
             <>
               <h3 className="sec">Recently viewed</h3>
-              <div className="rec" id="rec">
+              <div className="rec recent" id="rec">
                 {recentItems.slice(0, 8).map((r, i) => {
                   const isSource = r.type === 'source'
                   const href = isSource
@@ -121,7 +121,7 @@ export default function NotebooksPage() {
                     <Link
                       key={r.id + i}
                       href={href}
-                      className={`r ${isSource ? 's' : ''}`}
+                      className={`r row ${isSource ? 's' : ''}`}
                     >
                       {isSource ? (
                         <svg className="i" viewBox="0 0 24 24">
@@ -133,8 +133,8 @@ export default function NotebooksPage() {
                         </svg>
                       )}
                       <span>{r.title}</span>
-                      <i className="k">{isSource ? 'SOURCE' : 'NOTEBOOK'}</i>
-                      <small>{formatRelativeTime(r.last_viewed_at)}</small>
+                      <i className="k tag">{isSource ? 'SOURCE' : 'NOTEBOOK'}</i>
+                      <small className="when">{formatRelativeTime(r.last_viewed_at)}</small>
                     </Link>
                   )
                 })}
@@ -151,7 +151,7 @@ export default function NotebooksPage() {
             {filteredActive.map((nb) => (
               <div
                 key={nb.id}
-                className="card"
+                className="card card-obsidian"
                 onClick={() => router.push(`/notebooks/${encodeURIComponent(nb.id)}`)}
               >
                 <div className="ic">
@@ -161,7 +161,7 @@ export default function NotebooksPage() {
                 </div>
                 <h4>{nb.name}</h4>
                 <p>{nb.description || 'No description'}</p>
-                <div className="meta">
+                <div className="meta ft">
                   <span>Updated {formatRelativeTime(nb.updated)}</span>
                   <span>
                     <svg className="i" viewBox="0 0 24 24" style={{ width: 13, verticalAlign: -2 }}>

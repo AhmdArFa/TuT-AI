@@ -9,6 +9,7 @@ import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ConnectionGuard } from "@/components/common/ConnectionGuard";
 import { themeScript } from "@/lib/theme-script";
 import { I18nProvider } from "@/components/providers/I18nProvider";
+import { EtchedCanvas } from "@/components/common/EtchedCanvas";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -48,6 +49,7 @@ export default function RootLayout({
             <QueryProvider>
               <I18nProvider>
                 <ConnectionGuard>
+                  <EtchedCanvas />
                   {children}
                   <Toaster />
                 </ConnectionGuard>

@@ -310,14 +310,24 @@ export default function SourcesPage() {
 
     return (<>
       <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
-        <div className="mb-6 flex-shrink-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight">{t('sources.allSources')}</h1>
-          <p className="mt-2 text-muted-foreground">
-            {t('sources.allSourcesDesc')}
-          </p>
+        <div className="mb-6 flex-shrink-0 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-[#f3f1ea]">{t('sources.allSources')}</h1>
+            <p className="mt-1 text-sm text-[#a9afb9]">
+              {t('sources.allSourcesDesc')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSourceDialogOpen(true)}
+            className="go btn-pearl h-11 px-5 rounded-xl flex items-center gap-2 text-sm font-semibold tracking-wide cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{t('sources.newSource')}</span>
+          </button>
         </div>
 
-        <div ref={scrollContainerRef} className="flex-1 rounded-md border overflow-auto">
+        <div ref={scrollContainerRef} className="flex-1 rounded-2xl border border-[rgba(255,255,255,0.09)] bg-[#07080a]/80 backdrop-blur-sm overflow-auto">
           <table
             ref={tableRef}
             tabIndex={0}

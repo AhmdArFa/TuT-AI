@@ -36,11 +36,16 @@ export function AppSidebar() {
   }
 
   return (
-    <aside id="side" className="tut-side">
+    <aside id="side" className="tut-side sidebar-obsidian">
       {/* Brand / Logo */}
       <div className="brand flex items-center gap-3 py-3 px-2">
-        <TuTBrandIcon size={42} className="text-[var(--gold)] shrink-0" />
-        <b className="text-base font-bold text-[#ececec]" style={{ letterSpacing: '0.15em' }}>TuT AI</b>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/tut-brand.png"
+          alt="TuT AI"
+          className="w-10 h-10 rounded-[12px] shrink-0 brand-icon-pearl object-cover"
+        />
+        <b className="text-[17px] font-semibold text-[#f3f1ea]" style={{ letterSpacing: '0.14em' }}>TuT AI</b>
       </div>
 
       {/* Main Nav */}
@@ -134,26 +139,27 @@ export function AppSidebar() {
       </div>
 
       {/* User profile footer */}
-      <div className="user-box">
-        <div className="av overflow-hidden flex items-center justify-center p-0">
+      <div className="user-box me">
+        <div className="av overflow-hidden flex items-center justify-center p-0 rounded-full" style={{ width: 36, height: 36, background: 'radial-gradient(circle at 50% 30%, #2a2f36, #0a0c0f)', boxShadow: '0 0 0 1px rgba(239,236,228,.4), 0 0 18px -4px rgba(190,215,255,.35)' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/avatars/users/admin.svg"
+            src="/avatars/mcit/tutankhamun.webp"
             alt={displayName}
             className="w-full h-full object-cover rounded-full"
             onError={(e) => {
-              (e.currentTarget as HTMLElement).style.display = 'none';
+              (e.currentTarget as HTMLImageElement).src = '/avatars/users/admin.svg';
             }}
           />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-[#ececec] truncate">{displayName}</div>
-          <small>TuT AI</small>
+          <div className="text-sm font-semibold text-[#f3f1ea] truncate">{displayName}</div>
+          <small className="text-[#a9afb9]">TuT AI</small>
         </div>
         <button
           type="button"
           onClick={() => logout?.()}
           title="Sign out"
-          className="text-[#8b8b8b] hover:text-[#ececec] transition-colors p-1"
+          className="text-[#a9afb9] hover:text-[#f3f1ea] transition-colors p-1"
         >
           <LogOut className="h-4 w-4" />
         </button>
