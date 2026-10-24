@@ -196,6 +196,20 @@ chmod +x ./scripts/setup_tut_ai.sh
 
 ---
 
+## 🧰 Tools
+
+### Multi-Resource Presentation Generator (MRPG)
+
+[`tools/presentation-generator/`](tools/presentation-generator/) is a standalone RAG based CLI that builds a native, editable PowerPoint deck from many resources at once (PDF, DOCX, PPTX, TXT, MD and web pages). Phase 1 chunks, embeds and indexes the sources offline into a saved vector index; phase 2 retrieves topic matched context and generates the deck online or offline from the same index, with per slide source citations and an extractive fallback that needs no model at all.
+
+```bash
+cd tools/presentation-generator
+python -m mrpg index --resources notes.md report.pdf --index-dir ./index
+python -m mrpg generate --topic "Sovereign AI" --load-index ./index --mode offline --out deck.pptx
+```
+
+---
+
 ## 🔒 Confidentiality & Sovereign License
 
 **CONFIDENTIAL — PROPRIETARY TO MCIT EGYPT.**
