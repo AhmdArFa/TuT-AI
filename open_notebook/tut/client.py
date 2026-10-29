@@ -15,6 +15,7 @@ from typing import Optional
 import httpx
 from loguru import logger
 
+from open_notebook.config import AGENT_URL
 from open_notebook.database.repository import repo_query
 from open_notebook.utils.encryption import decrypt_value, encrypt_value
 
@@ -114,7 +115,7 @@ async def draft(
         else DEFAULT_FALLBACK_KEY
     )
     primary_url = (os.getenv("TUT_AGENT_INTERNAL_URL") or "http://tut-agent:3210").rstrip("/")
-    fallback_url = "http://localhost:3210"
+    fallback_url = AGENT_URL
     timeout = min(float(os.getenv("TUT_DRAFT_TIMEOUT_SECONDS", "15") or 15), 30)
 
     for target_url in [primary_url, fallback_url] if primary_url != fallback_url else [primary_url]:

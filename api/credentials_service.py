@@ -23,6 +23,7 @@ from open_notebook.ai.model_discovery import (
     fetch_anthropic_model_ids,
 )
 from open_notebook.ai.provider_registry import PROVIDERS
+from open_notebook.config import OLLAMA_BASE_URL, OMLX_BASE_URL
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import (
     PBKDF2_MARKER,
@@ -277,7 +278,7 @@ async def test_credential(credential_id: str) -> dict:
 
         # Handle special providers
         if provider == "ollama":
-            base_url = config.get("base_url", "http://localhost:11434")
+            base_url = config.get("base_url", OLLAMA_BASE_URL)
             success, message = await _test_ollama_connection(base_url)
             return {"provider": provider, "success": success, "message": message}
 
@@ -311,7 +312,7 @@ async def test_credential(credential_id: str) -> dict:
 
         if provider == "omlx":
             # Esperanto oMLX profile default; port 11435 avoids SurrealDB on 8000.
-            base_url = config.get("base_url") or "http://localhost:11435/v1"
+            base_url = config.get("base_url") or OMLX_BASE_URL
             api_key = config.get("api_key")
             success, message = await _test_openai_compatible_connection(
                 base_url, api_key
@@ -484,7 +485,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     }
 
     if provider == "ollama":
-        ollama_url = base_url or "http://localhost:11434"
+        ollama_url = base_url or OLLAMA_BASE_URL
         try:
             # Pin DNS at request time so httpx cannot re-resolve to a
             # metadata address after validation (DNS rebinding TOCTOU).
@@ -577,7 +578,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             return []
 
     if provider == "omlx":
-        omlx_url = base_url or "http://localhost:11435/v1"
+        omlx_url = base_url or OMLX_BASE_URL
         try:
             target = await prepare_pinned_http_target(models_endpoint(omlx_url), "omlx")
             headers = dict(target.headers)

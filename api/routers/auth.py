@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from api.auth import SESSION_COOKIE, current_account, extract_token
 from open_notebook import accounts
+from open_notebook.config import PUBLIC_URL
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -44,6 +45,7 @@ async def login(body: LoginRequest, request: Request):
     await accounts.audit("auth.login", actor=account.id)
     try:
         import asyncio
+
         from api.routers.tut import connect_tools
 
         asyncio.create_task(connect_tools(account))
@@ -67,7 +69,7 @@ def tut_signout_url() -> str | None:
     tut = (os.getenv("TUT_AGENT_PUBLIC_URL") or "").rstrip("/")
     if not tut:
         return None
-    back = (os.getenv("MCIT_PUBLIC_URL") or "http://localhost:8502").rstrip("/") + "/login"
+    back = PUBLIC_URL.rstrip("/") + "/login"
     return f"{tut}/webapi/mcit/signout?{urlencode({'return_to': back})}"
 
 

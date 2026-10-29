@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from api.auth import current_account
 from open_notebook import accounts
+from open_notebook.config import INTERNAL_API_URL
 from open_notebook.tut import client
 
 router = APIRouter(prefix="/tut", tags=["tut"])
@@ -28,7 +29,7 @@ async def connect_tools(account: accounts.Account) -> dict:
     """Give the person's Tut Agent the MCIT AI tools (idempotent)."""
     base = (os.getenv("TUT_AGENT_INTERNAL_URL") or "").rstrip("/")
     admin = os.getenv("MCIT_ADMIN_BOOTSTRAP_TOKEN") or ""
-    api = (os.getenv("MCIT_INTERNAL_API_URL") or "http://127.0.0.1:5055").rstrip("/")
+    api = INTERNAL_API_URL.rstrip("/")
     if not base or not admin:
         return {"tools": "not_configured"}
     session = accounts.issue_session(account, hours=24 * 90, scope="mcp")

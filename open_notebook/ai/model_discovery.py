@@ -16,6 +16,7 @@ from loguru import logger
 from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
 from open_notebook.ai.models import Model
 from open_notebook.ai.provider_registry import PROVIDERS
+from open_notebook.config import OLLAMA_BASE_URL, OMLX_BASE_URL
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.ssl_config import httpx_verify_setting
@@ -502,7 +503,7 @@ async def discover_google_models() -> List[DiscoveredModel]:
 
 async def discover_ollama_models() -> List[DiscoveredModel]:
     """Fetch available models from local Ollama instance."""
-    base_url = os.environ.get("OLLAMA_API_BASE", "http://localhost:11434")
+    base_url = OLLAMA_BASE_URL
     if not base_url:
         return []
 
@@ -863,7 +864,7 @@ async def discover_anthropic_compatible_models() -> List[DiscoveredModel]:
     return models
 
 
-_OMLX_DEFAULT_BASE_URL = "http://localhost:11435/v1"
+_OMLX_DEFAULT_BASE_URL = OMLX_BASE_URL
 
 
 async def discover_omlx_models() -> List[DiscoveredModel]:

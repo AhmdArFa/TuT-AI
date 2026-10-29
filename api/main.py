@@ -278,8 +278,13 @@ app.add_middleware(
 # after SessionAuthMiddleware (so it wraps around it) so a too-large request
 # is rejected before spending any work checking credentials.
 logger.info(
-    f"Max request body size: {MAX_UPLOAD_SIZE_BYTES / (1024 * 1024):g}MB "
-    "(set OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB to change)"
+    "Max request body size: "
+    + (
+        f"{MAX_UPLOAD_SIZE_BYTES / (1024 * 1024):g}MB"
+        if MAX_UPLOAD_SIZE_BYTES is not None
+        else "unlimited (any file size accepted)"
+    )
+    + " (set OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB to cap it)"
 )
 app.add_middleware(MaxBodySizeMiddleware, max_body_size=MAX_UPLOAD_SIZE_BYTES)
 

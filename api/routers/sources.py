@@ -156,31 +156,47 @@ def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
             counter += 1
 
 
-def _write_uploaded_file(filename: str, content: bytes) -> str:
+def _stream_uploaded_file_to_disk(
+    upload_file: UploadFile, file_path: str, chunk_bytes: int
+) -> None:
     """Sync filesystem work for save_uploaded_file() - run via asyncio.to_thread
     so a large upload doesn't block the event loop for other requests."""
-    file_path = generate_unique_filename(filename, uploads_folder())
-    try:
-        with open(file_path, "wb") as f:
-            f.write(content)
+    with open(file_path, "wb") as f:
+        while True:
+            chunk = upload_file.file.read(chunk_bytes)
+            if not chunk:
+                break
+            f.write(chunk)
 
+
+async def save_uploaded_file(upload_file: UploadFile) -> str:
+    """Stream an uploaded file to the uploads folder and return its path.
+
+    The file is written in bounded chunks (OPEN_NOTEBOOK_UPLOAD_STREAM_CHUNK_BYTES,
+    default 1 MB) instead of being read whole into memory, so a PDF of any
+    size can be accepted without the upload itself exhausting RAM. A partial
+    file is removed if the stream fails midway.
+    """
+    if not upload_file.filename:
+        raise ValueError("No filename provided")
+
+    from open_notebook.config import UPLOAD_STREAM_CHUNK_BYTES
+
+    file_path = generate_unique_filename(upload_file.filename, uploads_folder())
+    try:
+        await asyncio.to_thread(
+            _stream_uploaded_file_to_disk,
+            upload_file,
+            file_path,
+            UPLOAD_STREAM_CHUNK_BYTES,
+        )
         logger.info(f"Saved uploaded file to: {file_path}")
         return file_path
     except Exception as e:
         logger.error(f"Failed to save uploaded file: {e}")
-        # Clean up partial file if it exists
         if os.path.exists(file_path):
             os.unlink(file_path)
         raise
-
-
-async def save_uploaded_file(upload_file: UploadFile) -> str:
-    """Save uploaded file to uploads folder and return file path."""
-    if not upload_file.filename:
-        raise ValueError("No filename provided")
-
-    content = await upload_file.read()
-    return await asyncio.to_thread(_write_uploaded_file, upload_file.filename, content)
 
 
 def parse_source_form_data(
@@ -1003,7 +1019,8 @@ async def retry_source_processing(source_id: str):
                     pasted = rows[0] if rows else None
                 if not pasted:
                     raise HTTPException(
-                        status_code=400, detail="Cannot determine source content for retry"
+                        status_code=400,
+                        detail="Cannot determine source content for retry",
                     )
                 content_state = {"content": pasted}
 

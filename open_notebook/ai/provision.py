@@ -3,6 +3,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
 
 from open_notebook.ai.models import model_manager
+from open_notebook.config import LARGE_CONTEXT_THRESHOLD_TOKENS
 from open_notebook.exceptions import ConfigurationError
 from open_notebook.utils import token_count
 
@@ -12,7 +13,7 @@ async def provision_langchain_model(
 ) -> BaseChatModel:
     """
     Returns the best model to use based on the context size and on whether there is a specific model being requested in Config.
-    If context > 105_000, returns the large_context_model
+    If context > LARGE_CONTEXT_THRESHOLD_TOKENS, returns the large_context_model
     If model_id is specified in Config, returns that model
     Otherwise, returns the default model for the given type
     """
@@ -20,7 +21,7 @@ async def provision_langchain_model(
     model = None
     selection_reason = ""
 
-    if tokens > 105_000:
+    if tokens > LARGE_CONTEXT_THRESHOLD_TOKENS:
         selection_reason = f"large_context (content has {tokens} tokens)"
         logger.debug(
             f"Using large context model because the content has {tokens} tokens"
@@ -95,7 +96,7 @@ async def _resolve_model_id(
     from open_notebook.ai.models import DefaultModels
 
     d = await DefaultModels.get_instance()
-    key = "large_context" if tokens > 105_000 else default_type
+    key = "large_context" if tokens > LARGE_CONTEXT_THRESHOLD_TOKENS else default_type
     return {
         "chat": d.default_chat_model,
         "transformation": d.default_transformation_model or d.default_chat_model,

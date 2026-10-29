@@ -16,7 +16,7 @@ Normative rules for working on the Python backend. Architecture and design ratio
 - NEVER return API key values from any endpoint — metadata only.
 - Every user-supplied URL field must go through `validate_url()` (`open_notebook/utils/url_validation.py`, async) for SSRF protection. Private IPs/localhost are intentionally allowed (self-hosted Ollama, LM Studio).
 - Errors: raise typed exceptions from `open_notebook.exceptions` — global handlers map them to HTTP status codes (`NotFoundError`→404, `InvalidInputError`→400, `AuthenticationError`→401, `UnsupportedTypeException`→415, `RateLimitError`→429, `ConfigurationError`→422, `NetworkError`/`ExternalServiceError`→502, other `OpenNotebookError`→500). Don't raise bare `HTTPException` for domain errors. A router's catch-all `except Exception` (sanitized 500) must come after `except OpenNotebookError: raise` so typed errors reach the handlers (`tests/test_typed_exceptions_reach_handlers.py`).
-- Requests over `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` (default 100) are rejected by `MaxBodySizeMiddleware` before auth/routing.
+- Uploads are uncapped by default (any file size accepted); only a positive `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` installs a cap, enforced by `MaxBodySizeMiddleware` before auth/routing. Capacity numbers, service addresses and model defaults live in `open_notebook/config.py` (single source of truth, env-overridable) — import them instead of repeating localhost/port/model literals.
 - CORS is open by default (`CORS_ORIGINS`); `allow_credentials` flips to `True` only when origins are explicit. No rate limiting built in.
 
 ## AI / model provisioning (`open_notebook/ai/`)
@@ -73,7 +73,10 @@ Normative rules for working on the Python backend. Architecture and design ratio
 |---|---|
 | `OPEN_NOTEBOOK_ENCRYPTION_KEY` (or `_FILE`) | Required for credential storage; any string, no default |
 | `OPEN_NOTEBOOK_CHUNK_SIZE` / `_CHUNK_OVERLAP` | Token-based (default 400 / 15%); restart required |
-| `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` | Upload cap (default 100) |
+| `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` | Upload cap in MB (default: uncapped) |
+| `OPEN_NOTEBOOK_LARGE_CONTEXT_THRESHOLD` | Tokens above which the large-context model is used (default 105000) |
+| `OPEN_NOTEBOOK_OFFICE_MAX_SAVE_MB` / `_OFFICE_TICKET_HOURS` | Office-viewer save cap / ticket validity (defaults 100 MB / 4 h) |
+| `MCIT_PUBLIC_URL` / `MCIT_INTERNAL_API_URL` / `OLLAMA_API_BASE` / `OLLAMA_CHAT_MODEL` / `OLLAMA_EMBEDDING_MODEL` | Service addresses and model defaults (see `open_notebook/config.py`) |
 | `CORS_ORIGINS` | Restrict before production |
 
 ## Deep dives

@@ -7,7 +7,6 @@ capabilities through /api/show; OpenAI-compatible providers (Groq, OpenRouter,
 "not reported" instead of guessing.
 """
 
-import os
 import time
 from typing import Any, Dict, Optional
 
@@ -15,6 +14,7 @@ import httpx
 from loguru import logger
 
 from open_notebook.ai.models import Model
+from open_notebook.config import OLLAMA_BASE_URL
 
 _CACHE: Dict[str, tuple[float, Dict[str, Any]]] = {}
 _TTL = 600
@@ -36,7 +36,7 @@ def _base(model_type: str) -> Dict[str, Any]:
 
 async def _ollama(model: Model) -> Dict[str, Any]:
     out = _base(model.type)
-    base = os.environ.get("OLLAMA_API_BASE", "http://localhost:11434").rstrip("/")
+    base = OLLAMA_BASE_URL.rstrip("/")
     async with httpx.AsyncClient(timeout=10) as c:
         r = await c.post(f"{base}/api/show", json={"model": model.name})
         r.raise_for_status()

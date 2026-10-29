@@ -17,9 +17,12 @@ const nextConfig: NextConfig = {
   // Experimental features
   // Type assertion needed: proxyClientMaxBodySize is valid in Next.js 15 but types lag behind
   experimental: {
-    // Increase proxy body size limit for file uploads (default is 10MB)
-    // This allows larger files to be uploaded through the /api/* rewrite proxy to FastAPI
-    proxyClientMaxBodySize: '100mb',
+    // Proxy body size limit for file uploads through the /api/* rewrite
+    // proxy to FastAPI. Next.js requires a finite value here, so the
+    // proxied path is capped at FRONTEND_PROXY_MAX_BODY_SIZE (default
+    // 10gb, effectively any PDF). The direct API path (the default upload
+    // route, straight to port 5055) has no cap at all.
+    proxyClientMaxBodySize: process.env.FRONTEND_PROXY_MAX_BODY_SIZE || '10gb',
     // Local CPU inference (Studio generation, chat) can take several minutes
     proxyTimeout: 900000,
   } as NextConfig['experimental'],

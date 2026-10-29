@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse, Response
 from loguru import logger
 
 from api.auth import current_account
+from open_notebook.config import AGENT_URL, PUBLIC_URL
 from open_notebook.craft.pipelines import Mode
 from open_notebook.domain.notebook import Note, Notebook, text_search, vector_search
 from open_notebook.exports import storage
@@ -103,9 +104,7 @@ async def files_list(_: Dict[str, Any]):
 
 
 def _public(path: str) -> str:
-    import os
-
-    base = (os.getenv("MCIT_PUBLIC_URL") or "http://localhost:8502").rstrip("/")
+    base = PUBLIC_URL.rstrip("/")
     return base + path
 
 
@@ -120,10 +119,13 @@ _MIME_TYPES = {
 }
 
 
-def _assign_tut_file_to_user(tut_file_id: str, target_username: Optional[str] = None) -> None:
+def _assign_tut_file_to_user(
+    tut_file_id: str, target_username: Optional[str] = None
+) -> None:
     """Assign file ownership in TuT Agent PostgreSQL database to the requesting user."""
     try:
         import os
+
         import psycopg2
 
         db_url = os.getenv(
@@ -136,7 +138,11 @@ def _assign_tut_file_to_user(tut_file_id: str, target_username: Optional[str] = 
                 if target_username:
                     cur.execute(
                         "SELECT id FROM users WHERE email = %s OR email LIKE %s OR username = %s LIMIT 1",
-                        (f"{target_username}@mcit.local", f"{target_username}@%", target_username),
+                        (
+                            f"{target_username}@mcit.local",
+                            f"{target_username}@%",
+                            target_username,
+                        ),
                     )
                     row = cur.fetchone()
                     if row:
@@ -157,7 +163,9 @@ def _assign_tut_file_to_user(tut_file_id: str, target_username: Optional[str] = 
                         (target_user_id, tut_file_id),
                     )
                     conn.commit()
-                    logger.info(f"Assigned TuT file {tut_file_id} to user {target_user_id} ({target_username or 'active'}) with public visibility")
+                    logger.info(
+                        f"Assigned TuT file {tut_file_id} to user {target_user_id} ({target_username or 'active'}) with public visibility"
+                    )
                 else:
                     cur.execute(
                         "UPDATE files SET visibility = 'public' WHERE id = %s",
@@ -399,7 +407,7 @@ async def studio_produce(a: Dict[str, Any]):
         open_url = _public(f"/files?open={f_id}&edit=true")
         dl_url = _public(f"/api/studio/files/{f_id}/download")
         tut_preview = f"/f/{tut_id}" if tut_id else open_url
-        tut_dl = f"http://localhost:3210/f/{tut_id}?download=1" if tut_id else dl_url
+        tut_dl = f"{AGENT_URL.rstrip('/')}/f/{tut_id}?download=1" if tut_id else dl_url
 
         files.append(
             {
@@ -431,11 +439,14 @@ async def studio_produce(a: Dict[str, Any]):
 
 async def generate_visual_blueprint(a: Dict[str, Any]):
     """Generate pure vector system architecture blueprints directly from topology graph definitions (nodes, edges, layout algorithms)."""
-    import asyncio
     import re
+
     from open_notebook.craft.runner import run_cli
     from open_notebook.craft.studio import job_dir
-    from open_notebook.craft.studio.blueprint import parse_blueprint_spec, render_blueprint_svg
+    from open_notebook.craft.studio.blueprint import (
+        parse_blueprint_spec,
+        render_blueprint_svg,
+    )
     from open_notebook.exports import storage
     from open_notebook.exports.content import StudioDocument, StudioOptions
 
@@ -464,7 +475,11 @@ async def generate_visual_blueprint(a: Dict[str, Any]):
     pdf_path = work / f"{stem}.pdf"
 
     try:
-        await run_cli("vectorcraft", ["convert", str(src), str(png_path), "--scale", "1"], cwd=work)
+        await run_cli(
+            "vectorcraft",
+            ["convert", str(src), str(png_path), "--scale", "1"],
+            cwd=work,
+        )
         await run_cli("vectorcraft", ["convert", str(src), str(pdf_path)], cwd=work)
     except Exception as ex:
         logger.warning(f"VectorCraft conversion error: {ex}")
@@ -492,7 +507,9 @@ async def generate_visual_blueprint(a: Dict[str, Any]):
     for ext, data, p in outputs:
         if not data:
             continue
-        item = storage.store_bytes(doc, ext, data, notebook_id=nb_id, document_id=doc_id)
+        item = storage.store_bytes(
+            doc, ext, data, notebook_id=nb_id, document_id=doc_id
+        )
         storage.update_meta(
             item.id,
             preset=f"blueprint:{mode}",
@@ -503,14 +520,16 @@ async def generate_visual_blueprint(a: Dict[str, Any]):
         tut_id = None
         mime = _MIME_TYPES.get(ext, "application/octet-stream")
         if stored_item and stored_item.path.exists():
-            tut_id = await _sync_file_to_tut_agent(stored_item.filename, stored_item.path, mime)
+            tut_id = await _sync_file_to_tut_agent(
+                stored_item.filename, stored_item.path, mime
+            )
             if tut_id:
                 storage.update_meta(stored_item.id, tut_id=tut_id)
 
         open_url = _public(f"/files?open={stored_item.id}&edit=true")
         dl_url = _public(f"/api/studio/files/{stored_item.id}/download")
         tut_preview = f"/f/{tut_id}" if tut_id else open_url
-        tut_dl = f"http://localhost:3210/f/{tut_id}?download=1" if tut_id else dl_url
+        tut_dl = f"{AGENT_URL.rstrip('/')}/f/{tut_id}?download=1" if tut_id else dl_url
 
         item_meta = stored_item.model_dump()
         files.append(
@@ -543,7 +562,6 @@ async def generate_visual_blueprint(a: Dict[str, Any]):
             f"{deliver_summary}"
         ),
     }
-
 
 
 async def studio_status(a: Dict[str, Any]):
@@ -1109,7 +1127,15 @@ TOOLS: Dict[str, Dict[str, Any]] = {
                 },
                 "diagram_type": {
                     "type": "string",
-                    "enum": ["sketchnote", "architecture", "network", "quadrant", "cycle", "blueprint", "custom_svg"],
+                    "enum": [
+                        "sketchnote",
+                        "architecture",
+                        "network",
+                        "quadrant",
+                        "cycle",
+                        "blueprint",
+                        "custom_svg",
+                    ],
                     "description": "For infographics: choose visual architecture archetype ('blueprint' for generative mathematical graph blueprint, 'architecture' for layered system tiers, 'network' for abstract topology/threat graph, 'quadrant' for 2x2 matrix, 'cycle' for flywheel, 'sketchnote' for doodle sketchnote, or 'custom_svg' for programmatic SVG).",
                 },
                 "custom_svg": {
@@ -1209,7 +1235,15 @@ TOOLS: Dict[str, Dict[str, Any]] = {
                 },
                 "diagram_type": {
                     "type": "string",
-                    "enum": ["sketchnote", "architecture", "network", "quadrant", "cycle", "blueprint", "custom_svg"],
+                    "enum": [
+                        "sketchnote",
+                        "architecture",
+                        "network",
+                        "quadrant",
+                        "cycle",
+                        "blueprint",
+                        "custom_svg",
+                    ],
                     "description": "For infographics: choose visual architecture archetype ('blueprint' for generative mathematical graph blueprint, 'architecture' for layered system tiers, 'network' for abstract topology/threat graph, 'quadrant' for 2x2 matrix, 'cycle' for flywheel, 'sketchnote' for doodle sketchnote, or 'custom_svg' for programmatic SVG).",
                 },
                 "custom_svg": {
@@ -1243,7 +1277,12 @@ TOOLS: Dict[str, Dict[str, Any]] = {
                 },
                 "style_override": {
                     "type": "string",
-                    "enum": ["handwritten_sketch", "whiteboard", "chalkboard", "pure_vector_geometric"],
+                    "enum": [
+                        "handwritten_sketch",
+                        "whiteboard",
+                        "chalkboard",
+                        "pure_vector_geometric",
+                    ],
                     "description": "Visual rendering style: 'handwritten_sketch' / 'whiteboard' (authentic hand-drawn whiteboard sketch with Caveat script font and wobbly strokes) or 'pure_vector_geometric' (clean futuristic digital blueprint).",
                 },
                 "title": {
@@ -1256,7 +1295,12 @@ TOOLS: Dict[str, Dict[str, Any]] = {
                 },
                 "layout_algorithm": {
                     "type": "string",
-                    "enum": ["force_directed_spring", "hierarchical", "circular", "grid"],
+                    "enum": [
+                        "force_directed_spring",
+                        "hierarchical",
+                        "circular",
+                        "grid",
+                    ],
                     "description": "Mathematical layout algorithm solver: 'force_directed_spring' (organic physical simulation), 'hierarchical' (DAG layered flow), 'circular' (concentric radial orbits), or 'grid' (orthogonal matrix).",
                 },
                 "nodes": {
@@ -1264,11 +1308,26 @@ TOOLS: Dict[str, Dict[str, Any]] = {
                     "items": {
                         "type": "object",
                         "properties": {
-                            "id": {"type": "string", "description": "Unique node ID (e.g. 'N1')"},
-                            "label": {"type": "string", "description": "Display name of component"},
-                            "role": {"type": "string", "description": "Role: 'Core', 'Input', 'AI', 'Storage', 'Governance', 'Security', 'Gateway', 'Output'"},
-                            "color": {"type": "string", "description": "Hex color code"},
-                            "description": {"type": "string", "description": "Brief metric or subtitle"},
+                            "id": {
+                                "type": "string",
+                                "description": "Unique node ID (e.g. 'N1')",
+                            },
+                            "label": {
+                                "type": "string",
+                                "description": "Display name of component",
+                            },
+                            "role": {
+                                "type": "string",
+                                "description": "Role: 'Core', 'Input', 'AI', 'Storage', 'Governance', 'Security', 'Gateway', 'Output'",
+                            },
+                            "color": {
+                                "type": "string",
+                                "description": "Hex color code",
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "Brief metric or subtitle",
+                            },
                         },
                         "required": ["id", "label"],
                     },
@@ -1279,11 +1338,33 @@ TOOLS: Dict[str, Dict[str, Any]] = {
                     "items": {
                         "type": "object",
                         "properties": {
-                            "source": {"type": "string", "description": "Source node ID"},
-                            "target": {"type": "string", "description": "Target node ID"},
-                            "weight": {"type": "number", "description": "Relationship weight / strength (0.1 to 1.0)"},
-                            "style": {"type": "string", "enum": ["directional_flow", "governance_constraint", "bidirectional", "dashed", "solid"], "description": "Connection style"},
-                            "label": {"type": "string", "description": "Optional label along connector line"},
+                            "source": {
+                                "type": "string",
+                                "description": "Source node ID",
+                            },
+                            "target": {
+                                "type": "string",
+                                "description": "Target node ID",
+                            },
+                            "weight": {
+                                "type": "number",
+                                "description": "Relationship weight / strength (0.1 to 1.0)",
+                            },
+                            "style": {
+                                "type": "string",
+                                "enum": [
+                                    "directional_flow",
+                                    "governance_constraint",
+                                    "bidirectional",
+                                    "dashed",
+                                    "solid",
+                                ],
+                                "description": "Connection style",
+                            },
+                            "label": {
+                                "type": "string",
+                                "description": "Optional label along connector line",
+                            },
                         },
                         "required": ["source", "target"],
                     },

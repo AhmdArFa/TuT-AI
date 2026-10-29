@@ -11,6 +11,7 @@ from typing import Optional
 from loguru import logger
 
 from open_notebook.ai.models import DefaultModels, Model
+from open_notebook.config import OLLAMA_CHAT_MODEL, OLLAMA_EMBEDDING_MODEL
 from open_notebook.database.repository import ensure_record_id, repo_query
 
 # OpenAI voice names used by the seeded podcast speaker profiles -> Kokoro voices
@@ -82,8 +83,8 @@ async def bootstrap_local_models() -> None:
         "no",
     ):
         return
-    llm = os.environ.get("OLLAMA_CHAT_MODEL", "qwen2.5:7b").strip()
-    embed = os.environ.get("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text").strip()
+    llm = OLLAMA_CHAT_MODEL
+    embed = OLLAMA_EMBEDDING_MODEL
 
     ollama_base = os.environ.get("OLLAMA_API_BASE")
     if ollama_base:

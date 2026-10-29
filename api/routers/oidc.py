@@ -32,7 +32,7 @@ from jwt.algorithms import RSAAlgorithm
 
 from api.auth import SESSION_COOKIE
 from open_notebook import accounts, tenancy
-from open_notebook.config import DATA_FOLDER
+from open_notebook.config import DATA_FOLDER, PUBLIC_URL
 from open_notebook.database.repository import repo_query
 
 router = APIRouter(prefix="/oidc", tags=["oidc"])
@@ -42,7 +42,7 @@ TOKEN_SECONDS = 3600
 
 
 def _public_base() -> str:
-    return (os.getenv("MCIT_PUBLIC_URL") or "http://localhost:8502").rstrip("/")
+    return PUBLIC_URL.rstrip("/")
 
 
 def issuer() -> str:
@@ -60,7 +60,11 @@ def _client_secret() -> str:
 def _allowed_redirect(uri: str) -> bool:
     allowed = [
         u.strip().rstrip("/")
-        for u in (os.getenv("TUT_OIDC_REDIRECT_ORIGINS") or os.getenv("TUT_AGENT_PUBLIC_URL") or "").split(",")
+        for u in (
+            os.getenv("TUT_OIDC_REDIRECT_ORIGINS")
+            or os.getenv("TUT_AGENT_PUBLIC_URL")
+            or ""
+        ).split(",")
         if u.strip()
     ]
     if not allowed:
@@ -100,14 +104,20 @@ def _private_key() -> rsa.RSAPrivateKey:
 
 
 def _kid() -> str:
-    pub = _private_key().public_key().public_bytes(
-        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+    pub = (
+        _private_key()
+        .public_key()
+        .public_bytes(
+            serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+        )
     )
     return hashlib.sha256(pub).hexdigest()[:16]
 
 
 def _sign(claims: Dict[str, Any]) -> str:
-    return jwt.encode(claims, _private_key(), algorithm="RS256", headers={"kid": _kid()})
+    return jwt.encode(
+        claims, _private_key(), algorithm="RS256", headers={"kid": _kid()}
+    )
 
 
 @router.get("/.well-known/openid-configuration")
@@ -126,9 +136,19 @@ async def discovery():
         "subject_types_supported": ["public"],
         "id_token_signing_alg_values_supported": ["RS256"],
         "scopes_supported": ["openid", "profile", "email"],
-        "token_endpoint_auth_methods_supported": ["client_secret_basic", "client_secret_post"],
+        "token_endpoint_auth_methods_supported": [
+            "client_secret_basic",
+            "client_secret_post",
+        ],
         "code_challenge_methods_supported": ["S256", "plain"],
-        "claims_supported": ["sub", "name", "preferred_username", "email", "email_verified", "role"],
+        "claims_supported": [
+            "sub",
+            "name",
+            "preferred_username",
+            "email",
+            "email_verified",
+            "role",
+        ],
     }
 
 
@@ -152,20 +172,30 @@ async def authorize(
     code_challenge_method: Optional[str] = None,
 ):
     if client_id != _client_id() or not _allowed_redirect(redirect_uri):
-        raise HTTPException(status_code=400, detail="Unknown client or redirect address")
+        raise HTTPException(
+            status_code=400, detail="Unknown client or redirect address"
+        )
     if response_type != "code":
-        raise HTTPException(status_code=400, detail="Only the authorization code flow is supported")
+        raise HTTPException(
+            status_code=400, detail="Only the authorization code flow is supported"
+        )
 
     claims = accounts.decode_session(request.cookies.get(SESSION_COOKIE) or "")
     account = await accounts.get_account(claims["sub"]) if claims else None
-    if account and claims and (
-        claims.get("ver") != account.token_version
-        or claims.get("scp") == "mcp"
-        or await accounts.is_session_revoked(claims)
+    if (
+        account
+        and claims
+        and (
+            claims.get("ver") != account.token_version
+            or claims.get("scp") == "mcp"
+            or await accounts.is_session_revoked(claims)
+        )
     ):
         account = None
     if not account or not account.active:
-        here = str(request.url.path) + ("?" + request.url.query if request.url.query else "")
+        here = str(request.url.path) + (
+            "?" + request.url.query if request.url.query else ""
+        )
         return RedirectResponse(f"/login?{urlencode({'next': here})}", status_code=302)
 
     code = secrets.token_urlsafe(32)
@@ -180,14 +210,17 @@ async def authorize(
                     "nonce": nonce,
                     "scope": scope,
                     "challenge": code_challenge,
-                    "challenge_method": code_challenge_method or ("plain" if code_challenge else None),
-                    "expires": datetime.now(timezone.utc) + timedelta(seconds=CODE_SECONDS),
+                    "challenge_method": code_challenge_method
+                    or ("plain" if code_challenge else None),
+                    "expires": datetime.now(timezone.utc)
+                    + timedelta(seconds=CODE_SECONDS),
                 }
             },
         )
     await accounts.audit("auth.tut_agent_login", actor=account.id)
     try:
         import asyncio
+
         from api.routers.tut import connect_tools
 
         asyncio.create_task(connect_tools(account))
@@ -200,7 +233,9 @@ async def authorize(
     return RedirectResponse(f"{redirect_uri}{sep}{urlencode(params)}", status_code=302)
 
 
-def _client_auth(request: Request, client_id: Optional[str], client_secret: Optional[str]) -> None:
+def _client_auth(
+    request: Request, client_id: Optional[str], client_secret: Optional[str]
+) -> None:
     header = request.headers.get("authorization") or ""
     if header.lower().startswith("basic "):
         try:
@@ -223,7 +258,11 @@ def _pkce_ok(row: Dict[str, Any], verifier: Optional[str]) -> bool:
     if not verifier:
         return False
     if row.get("challenge_method") == "S256":
-        digest = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+        digest = (
+            base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
+            .rstrip(b"=")
+            .decode()
+        )
         return hmac.compare_digest(digest, challenge)
     return hmac.compare_digest(verifier, challenge)
 
@@ -273,8 +312,12 @@ async def token(
         "email_verified": True,
         "role": account.role,
     }
-    id_token = _sign({**base, "aud": _client_id(), "nonce": row.get("nonce"), **profile})
-    access_token = _sign({**base, "aud": "mcit-ai", "scope": row.get("scope", "openid"), "typ": "access"})
+    id_token = _sign(
+        {**base, "aud": _client_id(), "nonce": row.get("nonce"), **profile}
+    )
+    access_token = _sign(
+        {**base, "aud": "mcit-ai", "scope": row.get("scope", "openid"), "typ": "access"}
+    )
     return {
         "access_token": access_token,
         "token_type": "Bearer",
@@ -318,7 +361,11 @@ async def end_session(request: Request, post_logout_redirect_uri: Optional[str] 
     claims = accounts.decode_session(request.cookies.get(SESSION_COOKIE) or "")
     if claims:
         await accounts.revoke_session(claims)
-    target = post_logout_redirect_uri if post_logout_redirect_uri and _allowed_redirect(post_logout_redirect_uri) else "/login"
+    target = (
+        post_logout_redirect_uri
+        if post_logout_redirect_uri and _allowed_redirect(post_logout_redirect_uri)
+        else "/login"
+    )
     response = RedirectResponse(target, status_code=302)
     response.delete_cookie(SESSION_COOKIE, path="/")
     return response

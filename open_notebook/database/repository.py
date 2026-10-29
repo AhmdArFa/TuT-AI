@@ -9,6 +9,7 @@ from surrealdb import AsyncSurreal, RecordID  # type: ignore
 from surrealdb.data.types.table import Table  # type: ignore
 
 from open_notebook import tenancy
+from open_notebook.config import SURREAL_ADDRESS
 from open_notebook.utils.proxy import ensure_internal_no_proxy
 
 # Keep the internal SurrealDB websocket out of any configured HTTP proxy
@@ -46,7 +47,7 @@ def get_database_url() -> str:
 
     # Fallback to the legacy variables. SURREAL_ADDRESS may already carry the
     # port ("host:8000", "[::1]:8000"); SURREAL_PORT only applies when it doesn't.
-    address = os.getenv("SURREAL_ADDRESS", "localhost")
+    address = SURREAL_ADDRESS
     if ":" not in address.rsplit("]", 1)[-1]:
         address = f"{address}:{os.getenv('SURREAL_PORT', '8000')}"
     return f"ws://{address}/rpc"

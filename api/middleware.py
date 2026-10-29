@@ -1,33 +1,38 @@
 import os
+from typing import Optional
 
 from loguru import logger
 from starlette.datastructures import Headers
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-# Matches the file-size guidance already documented in
-# docs/3-USER-GUIDE/adding-sources.md ("Very large files (>100MB) - Timeout").
-DEFAULT_MAX_UPLOAD_SIZE_MB = 100
+from open_notebook.config import DEFAULT_MAX_UPLOAD_SIZE_MB
 
 
-def get_max_upload_size_bytes() -> int:
-    """Read the configured max request body size, in bytes.
+def get_max_upload_size_bytes() -> Optional[int]:
+    """Configured max request body size, in bytes, or None for no cap.
 
-    Configurable via OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB for deployments that
-    need larger audio/video uploads; falls back to the default on unset,
-    malformed, or non-positive values (a zero/negative limit would reject
-    every request that has a body).
+    Read from OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB on every call (see
+    open_notebook.config for the default). Unset, blank, zero, negative or
+    malformed values all mean unlimited, so a PDF of any size is accepted
+    by default; only a positive number installs a cap (413 above it).
     """
     raw = os.environ.get("OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB", "").strip()
-    try:
-        mb = float(raw) if raw else DEFAULT_MAX_UPLOAD_SIZE_MB
-    except ValueError:
-        mb = DEFAULT_MAX_UPLOAD_SIZE_MB
-    if mb <= 0:
-        logger.warning(
-            f"OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB={raw!r} is not a positive size; "
-            f"using the default of {DEFAULT_MAX_UPLOAD_SIZE_MB}MB"
+    if not raw:
+        return (
+            None
+            if DEFAULT_MAX_UPLOAD_SIZE_MB is None
+            else int(DEFAULT_MAX_UPLOAD_SIZE_MB * 1024 * 1024)
         )
-        mb = DEFAULT_MAX_UPLOAD_SIZE_MB
+    try:
+        mb = float(raw)
+    except ValueError:
+        logger.warning(
+            f"OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB={raw!r} is not a number; "
+            "uploads are uncapped"
+        )
+        return None
+    if mb <= 0:
+        return None
     return int(mb * 1024 * 1024)
 
 
@@ -48,14 +53,17 @@ class MaxBodySizeMiddleware:
     case, and cheap), and also counts bytes as the body streams in - a
     client can lie about Content-Length or omit it entirely with chunked
     transfer-encoding.
+
+    Pass max_body_size=None to disable enforcement entirely (the default):
+    the middleware then passes requests straight through.
     """
 
-    def __init__(self, app: ASGIApp, max_body_size: int) -> None:
+    def __init__(self, app: ASGIApp, max_body_size: Optional[int]) -> None:
         self.app = app
         self.max_body_size = max_body_size
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http":
+        if scope["type"] != "http" or self.max_body_size is None:
             await self.app(scope, receive, send)
             return
 

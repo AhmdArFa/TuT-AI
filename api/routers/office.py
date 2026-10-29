@@ -28,19 +28,35 @@ from loguru import logger
 
 from api.auth import current_account
 from open_notebook import accounts, tenancy
+from open_notebook.config import (
+    INTERNAL_API_URL,
+    OFFICE_MAX_SAVE_MB,
+    OFFICE_TICKET_HOURS,
+)
 from open_notebook.exports import storage
 
 router = APIRouter(prefix="/office", tags=["office"])
 
 DOC_TYPES = {
-    "docx": "word", "doc": "word", "odt": "word", "rtf": "word", "txt": "word", "md": "word", "html": "word",
-    "xlsx": "cell", "xls": "cell", "ods": "cell", "csv": "cell",
-    "pptx": "slide", "ppt": "slide", "odp": "slide",
+    "docx": "word",
+    "doc": "word",
+    "odt": "word",
+    "rtf": "word",
+    "txt": "word",
+    "md": "word",
+    "html": "word",
+    "xlsx": "cell",
+    "xls": "cell",
+    "ods": "cell",
+    "csv": "cell",
+    "pptx": "slide",
+    "ppt": "slide",
+    "odp": "slide",
     "pdf": "pdf",
 }
 EDITABLE = {"docx", "xlsx", "pptx", "odt", "ods", "odp", "csv", "txt", "md"}
-TICKET_SECONDS = 4 * 3600
-MAX_SAVE_BYTES = 100 * 1024 * 1024
+TICKET_SECONDS = OFFICE_TICKET_HOURS * 3600
+MAX_SAVE_BYTES = OFFICE_MAX_SAVE_MB * 1024 * 1024
 
 
 def _public_url() -> str:
@@ -53,7 +69,7 @@ def _internal_url() -> str:
 
 def _backend_url() -> str:
     """How Document Server reaches this API (server to server)."""
-    return (os.getenv("MCIT_INTERNAL_API_URL") or "http://localhost:5055").rstrip("/")
+    return INTERNAL_API_URL.rstrip("/")
 
 
 def _jwt_secret() -> str:
@@ -63,7 +79,13 @@ def _jwt_secret() -> str:
 def _ticket(file_id: str, user_id: str) -> str:
     now = int(time.time())
     return jwt.encode(
-        {"typ": "office", "fid": file_id, "sub": user_id, "iat": now, "exp": now + TICKET_SECONDS},
+        {
+            "typ": "office",
+            "fid": file_id,
+            "sub": user_id,
+            "iat": now,
+            "exp": now + TICKET_SECONDS,
+        },
         accounts.auth_secret(),
         algorithm="HS256",
     )
@@ -79,11 +101,15 @@ def _read_ticket(ticket: str) -> Dict[str, Any]:
     return claims
 
 
-def _check_server_token(request: Request, body: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+def _check_server_token(
+    request: Request, body: Optional[Dict[str, Any]] = None
+) -> Optional[Dict[str, Any]]:
     """Verify Document Server's own JWT when one is configured."""
     secret = _jwt_secret()
     if not secret:
-        raise HTTPException(status_code=503, detail="The office viewer secret is not configured")
+        raise HTTPException(
+            status_code=503, detail="The office viewer secret is not configured"
+        )
     token = (body or {}).get("token")
     if not token:
         header = request.headers.get("authorization") or ""
@@ -99,19 +125,34 @@ def _check_server_token(request: Request, body: Optional[Dict[str, Any]] = None)
 
 @router.get("/settings")
 async def office_settings():
-    return {"enabled": bool(_public_url()), "public_url": _public_url(), "formats": sorted(DOC_TYPES)}
+    return {
+        "enabled": bool(_public_url()),
+        "public_url": _public_url(),
+        "formats": sorted(DOC_TYPES),
+    }
 
 
 @router.get("/config/{file_id}")
-async def office_config(file_id: str, request: Request, mode: str = "view", theme: str = "dark"):
+async def office_config(
+    file_id: str, request: Request, mode: str = "view", theme: str = "dark"
+):
     account = current_account(request)
     if not _public_url():
-        raise HTTPException(status_code=503, detail="The office viewer is not configured")
+        raise HTTPException(
+            status_code=503, detail="The office viewer is not configured"
+        )
     item = storage.get_file(file_id)
     if not item or not item.path.exists():
         files = storage.list_files()
         matched = next(
-            (f for f in files if f.filename == file_id or f.filename.lower() == file_id.lower() or f.id == file_id or file_id.lower() in f.filename.lower()),
+            (
+                f
+                for f in files
+                if f.filename == file_id
+                or f.filename.lower() == file_id.lower()
+                or f.id == file_id
+                or file_id.lower() in f.filename.lower()
+            ),
             None,
         )
         if matched and matched.path.exists():
@@ -120,7 +161,9 @@ async def office_config(file_id: str, request: Request, mode: str = "view", them
         raise HTTPException(status_code=404, detail="File not found")
     ext = item.format.lower()
     if ext not in DOC_TYPES:
-        raise HTTPException(status_code=415, detail="This file type opens without the office viewer")
+        raise HTTPException(
+            status_code=415, detail="This file type opens without the office viewer"
+        )
 
     owner = tenancy.current_tenant_user() or account.id
     ticket = _ticket(item.id, owner)
@@ -148,7 +191,10 @@ async def office_config(file_id: str, request: Request, mode: str = "view", them
             "mode": "edit" if can_edit else "view",
             "lang": "en",
             "callbackUrl": f"{_backend_url()}/api/office/callback/{ticket}",
-            "user": {"id": account.id, "name": account.display_name or account.username},
+            "user": {
+                "id": account.id,
+                "name": account.display_name or account.username,
+            },
             "customization": {
                 "uiTheme": "theme-dark" if theme == "dark" else "theme-light",
                 "compactHeader": True,
@@ -191,10 +237,16 @@ async def office_callback(ticket: str, request: Request):
         public, internal = _public_url(), _internal_url()
         origin = urlsplit(url)
         permitted = {urlsplit(public).netloc, urlsplit(internal).netloc}
-        if origin.scheme not in ("http", "https") or origin.netloc not in permitted or origin.username:
-            raise HTTPException(status_code=403, detail="Unexpected office save address")
+        if (
+            origin.scheme not in ("http", "https")
+            or origin.netloc not in permitted
+            or origin.username
+        ):
+            raise HTTPException(
+                status_code=403, detail="Unexpected office save address"
+            )
         if public and internal and url.startswith(public + "/"):
-            url = internal + url[len(public):]
+            url = internal + url[len(public) :]
         try:
             async with httpx.AsyncClient(timeout=60, follow_redirects=False) as client:
                 async with client.stream("GET", url) as response:
