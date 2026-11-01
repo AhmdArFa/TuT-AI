@@ -38,9 +38,9 @@ export function AppSidebar() {
   return (
     <aside id="side" className="tut-side">
       {/* Brand / Logo */}
-      <div className="brand flex items-center gap-3 py-3 px-2">
-        <TuTBrandIcon size={42} className="text-[var(--gold)] shrink-0" />
-        <b className="text-base font-bold text-[#ececec]" style={{ letterSpacing: '0.15em' }}>TuT AI</b>
+      <div className="brand flex items-center gap-2.5">
+        <TuTBrandIcon size={32} className="text-[var(--gold)]" />
+        <b style={{ letterSpacing: '0.2em' }}>TuT AI</b>
       </div>
 
       {/* Main Nav */}
@@ -95,6 +95,16 @@ export function AppSidebar() {
         <span>Files</span>
       </Link>
 
+      <Link
+        href="/podcasts"
+        className={`nav ${isActive('/podcasts') ? 'on' : ''}`}
+      >
+        <svg className="i" viewBox="0 0 24 24">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" />
+        </svg>
+        <span>Podcasts</span>
+      </Link>
 
       {isAdmin && (
         <Link
@@ -125,16 +135,7 @@ export function AppSidebar() {
 
       {/* User profile footer */}
       <div className="user-box">
-        <div className="av overflow-hidden flex items-center justify-center p-0">
-          <img
-            src="/avatars/users/admin.svg"
-            alt={displayName}
-            className="w-full h-full object-cover rounded-full"
-            onError={(e) => {
-              (e.currentTarget as HTMLElement).style.display = 'none';
-            }}
-          />
-        </div>
+        <div className="av">{initials}</div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-[#ececec] truncate">{displayName}</div>
           <small>TuT AI</small>

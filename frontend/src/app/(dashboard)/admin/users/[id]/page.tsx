@@ -163,7 +163,7 @@ export default function AdminUserPage() {
       <AppShell>
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-            <Link href="/admin" className="flex items-center gap-1.5 self-start text-sm text-[#F5C242] hover:text-[#ffcf55] transition-colors">
+            <Link href="/admin" className="flex items-center gap-1.5 self-start text-sm text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-4 w-4" /> Admin console
             </Link>
             {isLoading || !data ? (
@@ -171,20 +171,10 @@ export default function AdminUserPage() {
             ) : (
               <>
                 <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold tracking-tight text-white">{data.user.display_name || data.user.username}</h1>
-                    {data.user.role === 'admin' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(245,194,66,0.15)] px-2.5 py-0.5 text-xs font-semibold text-[#F5C242] border border-[rgba(245,194,66,0.3)]">
-                        Administrator
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-[rgba(255,255,255,0.06)] px-2.5 py-0.5 text-xs text-[#b0b5c5]">
-                        Member
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-[#8b92a5]">
-                    {data.user.username} {!data.user.active && ' · sign-in disabled'} · last sign-in {when(data.user.last_login)}
+                  <h1 className="text-2xl font-semibold tracking-tight">{data.user.display_name || data.user.username}</h1>
+                  <p className="text-sm text-muted-foreground">
+                    {data.user.username} · {data.user.role === 'admin' ? 'Administrator' : 'Member'}
+                    {!data.user.active && ' · sign-in disabled'} · last sign-in {when(data.user.last_login)}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
@@ -201,20 +191,20 @@ export default function AdminUserPage() {
                 </div>
 
                 <Tabs defaultValue="chats" className="flex flex-col gap-4">
-                  <TabsList className="self-start bg-[rgba(15,18,25,0.8)] border border-[rgba(245,194,66,0.18)] p-1 rounded-xl">
-                    <TabsTrigger value="chats" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">Chats</TabsTrigger>
-                    <TabsTrigger value="files" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">Generations</TabsTrigger>
-                    <TabsTrigger value="usage" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">Usage</TabsTrigger>
-                    <TabsTrigger value="tut" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">TuT Agent</TabsTrigger>
-                    <TabsTrigger value="activity" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">Activity</TabsTrigger>
-                    <TabsTrigger value="account" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">Account</TabsTrigger>
+                  <TabsList className="self-start">
+                    <TabsTrigger value="chats">Chats</TabsTrigger>
+                    <TabsTrigger value="files">Generations</TabsTrigger>
+                    <TabsTrigger value="usage">Usage</TabsTrigger>
+                    <TabsTrigger value="tut">TuT Agent</TabsTrigger>
+                    <TabsTrigger value="activity">Activity</TabsTrigger>
+                    <TabsTrigger value="account">Account</TabsTrigger>
                   </TabsList>
                   <TabsContent value="chats">
                     <Chats userId={userId} />
                   </TabsContent>
                   <TabsContent value="files">
                     {files.length === 0 ? (
-                      <p className="text-sm text-[#8b92a5]">No generated files yet.</p>
+                      <p className="text-sm text-muted-foreground">No generated files yet.</p>
                     ) : (
                       <div className="grid gap-2 md:grid-cols-2">
                         {files.map((f) => (
@@ -224,24 +214,24 @@ export default function AdminUserPage() {
                     )}
                   </TabsContent>
                   <TabsContent value="usage" className="flex flex-col gap-4">
-                    <div className="overflow-x-auto rounded-xl border border-[rgba(245,194,66,0.18)] bg-[rgba(15,18,25,0.7)] backdrop-blur-md">
+                    <div className="overflow-x-auto rounded-xl border border-border">
                       <table className="w-full text-sm">
-                        <thead className="bg-[rgba(20,24,35,0.95)] text-left text-xs font-semibold text-[#a0a5b5] border-b border-[rgba(245,194,66,0.15)]">
-                          <tr>{['Model', 'Requests', 'Input', 'Output', 'Errors', 'Last used'].map((h) => <th key={h} className="px-4 py-3 font-medium uppercase tracking-wider text-[11px]">{h}</th>)}</tr>
+                        <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
+                          <tr>{['Model', 'Requests', 'Input', 'Output', 'Errors', 'Last used'].map((h) => <th key={h} className="px-4 py-2.5 font-medium">{h}</th>)}</tr>
                         </thead>
                         <tbody>
                           {(usage?.models ?? []).map((m) => (
-                            <tr key={`${m.provider}-${m.model}`} className="border-t border-[rgba(255,255,255,0.06)] hover:bg-[rgba(245,194,66,0.04)] transition-colors">
-                              <td className="px-4 py-2.5 font-medium text-white">{m.model}</td>
-                              <td className="px-4 py-2.5 tabular-nums text-[#e0e2ec]">{m.requests}</td>
-                              <td className="px-4 py-2.5 tabular-nums text-[#F5C242]">{formatTokens(m.input_tokens)}</td>
-                              <td className="px-4 py-2.5 tabular-nums text-[#F5C242]">{formatTokens(m.output_tokens)}</td>
-                              <td className="px-4 py-2.5 tabular-nums text-destructive">{m.errors}</td>
-                              <td className="px-4 py-2.5 text-[#8b92a5]">{when(m.last_used)}</td>
+                            <tr key={`${m.provider}-${m.model}`} className="border-t border-border">
+                              <td className="px-4 py-2.5">{m.model}</td>
+                              <td className="px-4 py-2.5 tabular-nums">{m.requests}</td>
+                              <td className="px-4 py-2.5 tabular-nums">{formatTokens(m.input_tokens)}</td>
+                              <td className="px-4 py-2.5 tabular-nums">{formatTokens(m.output_tokens)}</td>
+                              <td className="px-4 py-2.5 tabular-nums">{m.errors}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{when(m.last_used)}</td>
                             </tr>
                           ))}
                           {!usage?.models.length && (
-                            <tr><td colSpan={6} className="px-4 py-6 text-center text-[#8b92a5]">No model usage in the last 30 days.</td></tr>
+                            <tr><td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">No model usage in the last 30 days.</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -251,14 +241,14 @@ export default function AdminUserPage() {
                     <TutWorkspace userId={userId} overview={data.tut} />
                   </TabsContent>
                   <TabsContent value="activity">
-                    <ul className="flex flex-col divide-y divide-[rgba(255,255,255,0.06)] rounded-xl border border-[rgba(245,194,66,0.18)] bg-[rgba(15,18,25,0.7)] backdrop-blur-md">
+                    <ul className="flex flex-col divide-y divide-border rounded-xl border border-border">
                       {activity.map((a) => (
-                        <li key={a.id} className="flex items-center justify-between px-4 py-3 text-sm hover:bg-[rgba(245,194,66,0.04)] transition-colors">
-                          <span className="font-medium text-[#F5C242]">{actionLabel(a.action)}</span>
-                          <span className="text-[#8b92a5]">{when(a.created)}</span>
+                        <li key={a.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                          <span>{actionLabel(a.action)}</span>
+                          <span className="text-muted-foreground">{when(a.created)}</span>
                         </li>
                       ))}
-                      {!activity.length && <li className="px-4 py-6 text-center text-sm text-[#8b92a5]">No activity recorded.</li>}
+                      {!activity.length && <li className="px-4 py-6 text-center text-sm text-muted-foreground">No activity recorded.</li>}
                     </ul>
                   </TabsContent>
                   <TabsContent value="account">

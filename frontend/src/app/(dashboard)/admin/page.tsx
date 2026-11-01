@@ -115,23 +115,16 @@ export default function AdminPage() {
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
             <div className="flex items-end justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(245,194,66,0.15)] text-[#F5C242] border border-[rgba(245,194,66,0.3)] shadow-[0_0_15px_rgba(245,194,66,0.15)]">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <h1 className="text-2xl font-bold tracking-tight text-white">Admin console</h1>
-                  <p className="text-sm text-[#8b92a5]">Accounts, per-user workspaces and platform health.</p>
-                </div>
+              <div className="flex flex-col gap-1">
+                <h1 className="text-2xl font-semibold tracking-tight">Admin console</h1>
+                <p className="text-sm text-muted-foreground">Accounts, per-user workspaces and platform health.</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="border-[rgba(245,194,66,0.25)] hover:border-[rgba(245,194,66,0.45)] hover:bg-[rgba(245,194,66,0.08)] text-[#e0e2ec]">
+                <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
                   <RefreshCw className={cn('mr-1.5 h-4 w-4', isFetching && 'animate-spin')} /> Refresh
                 </Button>
-                <Button size="sm" onClick={() => setCreating(true)} className="bg-[#F5C242] text-black font-semibold hover:bg-[#ffcf55] shadow-[0_2px_12px_rgba(245,194,66,0.25)]">
-                  <Plus className="mr-1.5 h-4 w-4 stroke-[2.5]" /> New account
+                <Button size="sm" onClick={() => setCreating(true)}>
+                  <Plus className="mr-1.5 h-4 w-4" /> New account
                 </Button>
               </div>
             </div>
@@ -140,10 +133,10 @@ export default function AdminPage() {
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : (
               <Tabs defaultValue="users" className="flex flex-col gap-4">
-                <TabsList className="self-start bg-[rgba(15,18,25,0.8)] border border-[rgba(245,194,66,0.18)] p-1 rounded-xl">
-                  <TabsTrigger value="users" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">Users</TabsTrigger>
-                  <TabsTrigger value="monitoring" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">Monitoring</TabsTrigger>
-                  <TabsTrigger value="activity" className="data-[state=active]:bg-[#F5C242] data-[state=active]:text-black font-medium transition-all">Activity</TabsTrigger>
+                <TabsList className="self-start">
+                  <TabsTrigger value="users">Users</TabsTrigger>
+                  <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+                  <TabsTrigger value="activity">Activity</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="users" className="flex flex-col gap-4">
@@ -153,45 +146,35 @@ export default function AdminPage() {
                     <StatCard label="Chats" value={data.totals.chats} />
                     <StatCard label="Generated files" value={data.totals.generations} />
                   </div>
-                  <Input placeholder="Search accounts" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs border-[rgba(245,194,66,0.2)] bg-[rgba(15,18,25,0.7)] text-sm focus-visible:ring-[#F5C242]" aria-label="Search accounts" />
-                  <div className="overflow-x-auto rounded-xl border border-[rgba(245,194,66,0.18)] bg-[rgba(15,18,25,0.7)] backdrop-blur-md">
+                  <Input placeholder="Search accounts" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" aria-label="Search accounts" />
+                  <div className="overflow-x-auto rounded-xl border border-border">
                     <table className="w-full text-sm">
-                      <thead className="bg-[rgba(20,24,35,0.95)] text-left text-xs font-semibold text-[#a0a5b5] border-b border-[rgba(245,194,66,0.15)]">
+                      <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
                         <tr>
                           {['Account', 'Role', 'Notebooks', 'Chats', 'Files', 'Tokens', 'Storage', 'Last sign-in'].map((h) => (
-                            <th key={h} className="px-4 py-3 font-medium uppercase tracking-wider text-[11px]">{h}</th>
+                            <th key={h} className="px-4 py-2.5 font-medium">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {users.map((u) => (
-                          <tr key={u.user.id} className="border-t border-[rgba(255,255,255,0.06)] hover:bg-[rgba(245,194,66,0.04)] transition-colors">
+                          <tr key={u.user.id} className="border-t border-border hover:bg-muted/40">
                             <td className="px-4 py-3">
                               <Link href={`/admin/users/${encodeURIComponent(u.user.id)}`} className="flex flex-col hover:underline">
-                                <span className="font-medium text-white">{u.user.display_name || u.user.username}</span>
-                                <span className="text-xs text-[#8b92a5]">
+                                <span className="font-medium">{u.user.display_name || u.user.username}</span>
+                                <span className="text-xs text-muted-foreground">
                                   {u.user.username}
                                   {!u.user.active && ' · disabled'}
                                 </span>
                               </Link>
                             </td>
-                            <td className="px-4 py-3">
-                              {u.user.role === 'admin' ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(245,194,66,0.15)] px-2.5 py-0.5 text-xs font-semibold text-[#F5C242] border border-[rgba(245,194,66,0.3)]">
-                                  Administrator
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center rounded-full bg-[rgba(255,255,255,0.06)] px-2.5 py-0.5 text-xs text-[#b0b5c5]">
-                                  Member
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 tabular-nums text-[#e0e2ec]">{u.counts.notebooks}</td>
-                            <td className="px-4 py-3 tabular-nums text-[#e0e2ec]">{u.counts.chats + (u.tut?.counts?.chats ?? 0)}</td>
-                            <td className="px-4 py-3 tabular-nums text-[#e0e2ec]">{u.counts.generations + (u.tut?.counts?.generations ?? 0)}</td>
-                            <td className="px-4 py-3 tabular-nums text-[#F5C242]">{formatTokens((u.total_usage ?? u.usage).input_tokens + (u.total_usage ?? u.usage).output_tokens)}</td>
-                            <td className="px-4 py-3 tabular-nums text-[#8b92a5]">{formatBytes(u.storage_bytes)}</td>
-                            <td className="px-4 py-3 text-[#8b92a5]">{when(u.user.last_login)}</td>
+                            <td className="px-4 py-3">{u.user.role === 'admin' ? 'Administrator' : 'Member'}</td>
+                            <td className="px-4 py-3 tabular-nums">{u.counts.notebooks}</td>
+                            <td className="px-4 py-3 tabular-nums">{u.counts.chats + (u.tut?.counts?.chats ?? 0)}</td>
+                            <td className="px-4 py-3 tabular-nums">{u.counts.generations + (u.tut?.counts?.generations ?? 0)}</td>
+                            <td className="px-4 py-3 tabular-nums">{formatTokens((u.total_usage ?? u.usage).input_tokens + (u.total_usage ?? u.usage).output_tokens)}</td>
+                            <td className="px-4 py-3 tabular-nums">{formatBytes(u.storage_bytes)}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{when(u.user.last_login)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -207,12 +190,12 @@ export default function AdminPage() {
                     <StatCard label="Background jobs" value={Object.values(data.jobs).reduce((a, b) => a + b, 0)} hint={Object.entries(data.jobs).map(([k, v]) => `${v} ${k}`).join(' · ') || 'None queued'} />
                   </div>
                   <section className="flex flex-col gap-2">
-                    <h2 className="text-sm font-semibold text-white">Services</h2>
+                    <h2 className="text-sm font-semibold">Services</h2>
                     <div className="grid gap-2 md:grid-cols-2">
                       {Object.entries(data.services).map(([key, s]) => (
-                        <div key={key} className="flex items-center justify-between rounded-xl border border-[rgba(245,194,66,0.18)] bg-[rgba(15,18,25,0.75)] backdrop-blur-md px-4 py-3 hover:border-[rgba(245,194,66,0.35)] transition-colors">
-                          <span className="text-sm font-medium text-white">{SERVICE_NAMES[key] ?? key}</span>
-                          <span className={cn('text-sm font-medium', s.state === 'up' ? 'text-[#2FD08C]' : s.state === 'not_configured' ? 'text-[#8b92a5]' : 'text-destructive')}>
+                        <div key={key} className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+                          <span className="text-sm font-medium">{SERVICE_NAMES[key] ?? key}</span>
+                          <span className={cn('text-sm', s.state === 'up' ? 'text-foreground' : s.state === 'not_configured' ? 'text-muted-foreground' : 'text-destructive')}>
                             {STATE_TEXT[s.state]}
                           </span>
                         </div>
@@ -220,13 +203,13 @@ export default function AdminPage() {
                     </div>
                   </section>
                   <section className="flex flex-col gap-2">
-                    <h2 className="text-sm font-semibold text-white">Craft engines</h2>
+                    <h2 className="text-sm font-semibold">Craft engines</h2>
                     <div className="grid gap-2 md:grid-cols-3">
                       {data.engines.map((e) => (
-                        <div key={e.id} className="flex flex-col gap-0.5 rounded-xl border border-[rgba(245,194,66,0.18)] bg-[rgba(15,18,25,0.75)] backdrop-blur-md px-4 py-3 hover:border-[rgba(245,194,66,0.35)] transition-colors">
-                          <span className="text-sm font-medium text-white">{e.name}</span>
-                          <span className="text-xs text-[#8b92a5]">{e.role}</span>
-                          <span className={cn('text-xs font-medium', e.available ? 'text-[#2FD08C]' : 'text-destructive')}>
+                        <div key={e.id} className="flex flex-col gap-0.5 rounded-xl border border-border bg-card px-4 py-3">
+                          <span className="text-sm font-medium">{e.name}</span>
+                          <span className="text-xs text-muted-foreground">{e.role}</span>
+                          <span className={cn('text-xs', e.available ? 'text-foreground' : 'text-destructive')}>
                             {e.available ? e.version || 'Installed' : 'Not installed'}
                           </span>
                         </div>
@@ -235,13 +218,13 @@ export default function AdminPage() {
                   </section>
                   {data.document_kit && (
                     <section className="flex flex-col gap-2">
-                      <h2 className="text-sm font-semibold text-white">Document kit</h2>
+                      <h2 className="text-sm font-semibold">Document kit</h2>
                       <div className="grid gap-2 md:grid-cols-3">
                         {data.document_kit.assets.map((a) => (
-                          <div key={a.id} className="flex flex-col gap-0.5 rounded-xl border border-[rgba(245,194,66,0.18)] bg-[rgba(15,18,25,0.75)] backdrop-blur-md px-4 py-3 hover:border-[rgba(245,194,66,0.35)] transition-colors">
-                            <span className="text-sm font-medium text-white">{a.purpose}</span>
-                            <span className="truncate text-xs text-[#8b92a5]">{a.file}</span>
-                            <span className={cn('text-xs font-medium', a.installed ? 'text-[#2FD08C]' : 'text-destructive')}>{a.installed ? 'Installed' : 'Not installed'}</span>
+                          <div key={a.id} className="flex flex-col gap-0.5 rounded-xl border border-border bg-card px-4 py-3">
+                            <span className="text-sm font-medium">{a.purpose}</span>
+                            <span className="truncate text-xs text-muted-foreground">{a.file}</span>
+                            <span className={cn('text-xs', a.installed ? 'text-foreground' : 'text-destructive')}>{a.installed ? 'Installed' : 'Not installed'}</span>
                           </div>
                         ))}
                       </div>
@@ -250,22 +233,22 @@ export default function AdminPage() {
                 </TabsContent>
 
                 <TabsContent value="activity">
-                  <div className="overflow-x-auto rounded-xl border border-[rgba(245,194,66,0.18)] bg-[rgba(15,18,25,0.7)] backdrop-blur-md">
+                  <div className="overflow-x-auto rounded-xl border border-border">
                     <table className="w-full text-sm">
-                      <thead className="bg-[rgba(20,24,35,0.95)] text-left text-xs font-semibold text-[#a0a5b5] border-b border-[rgba(245,194,66,0.15)]">
+                      <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
                         <tr>
                           {['When', 'Event', 'By', 'Account'].map((h) => (
-                            <th key={h} className="px-4 py-3 font-medium uppercase tracking-wider text-[11px]">{h}</th>
+                            <th key={h} className="px-4 py-2.5 font-medium">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {data.audit.map((a) => (
-                          <tr key={a.id} className="border-t border-[rgba(255,255,255,0.06)] hover:bg-[rgba(245,194,66,0.04)] transition-colors">
-                            <td className="px-4 py-2.5 text-[#8b92a5]">{when(a.created)}</td>
-                            <td className="px-4 py-2.5 font-medium text-[#F5C242]">{actionLabel(a.action)}</td>
-                            <td className="px-4 py-2.5 text-[#e0e2ec]">{a.actor ? names[a.actor] ?? '—' : String(a.detail?.username ?? '—')}</td>
-                            <td className="px-4 py-2.5 text-[#8b92a5]">{a.target ? names[a.target] ?? '—' : '—'}</td>
+                          <tr key={a.id} className="border-t border-border">
+                            <td className="px-4 py-2.5 text-muted-foreground">{when(a.created)}</td>
+                            <td className="px-4 py-2.5">{actionLabel(a.action)}</td>
+                            <td className="px-4 py-2.5">{a.actor ? names[a.actor] ?? '—' : String(a.detail?.username ?? '—')}</td>
+                            <td className="px-4 py-2.5">{a.target ? names[a.target] ?? '—' : '—'}</td>
                           </tr>
                         ))}
                       </tbody>

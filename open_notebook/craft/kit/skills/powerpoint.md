@@ -5,7 +5,7 @@ description: Build Midnight Noir decks. PptxGenJS constructs the pptx, DeckCraft
 
 # Presentation skill
 
-Call the Studio tool with feature `presentation`. The backend builds and audits the deck.
+Call the `generate_document` tool with feature `presentation`. PptxGenJS and DeckCraft build and audit the deck on the backend and deliver the .pptx and .pdf.
 
 - Layout 16:9 (13.33 x 7.5 in). One idea per slide, at most 6 body lines.
 - Slide 1: full-bleed hero cover art, eyebrow top-left, Nohemi Bold title,

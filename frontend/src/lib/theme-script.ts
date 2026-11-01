@@ -1,4 +1,4 @@
-// This script runs before React hydration to prevent theme and accent flash
+// This script runs before React hydration to prevent theme flash
 export const themeScript = `
 (function() {
   try {
@@ -9,26 +9,10 @@ export const themeScript = `
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(effectiveTheme);
     document.documentElement.setAttribute('data-theme', effectiveTheme);
-
-    var accent = localStorage.getItem('mcit-accent-color') || '#FFEDB9';
-    document.documentElement.style.setProperty('--primary', accent);
-    document.documentElement.style.setProperty('--gold', accent);
-    document.documentElement.style.setProperty('--ring', accent);
   } catch (e) {
+    // Fallback to the default dark theme
     document.documentElement.classList.add('dark');
     document.documentElement.setAttribute('data-theme', 'dark');
-    document.documentElement.style.setProperty('--primary', '#FFEDB9');
-    document.documentElement.style.setProperty('--gold', '#FFEDB9');
-    document.documentElement.style.setProperty('--ring', '#FFEDB9');
   }
-
-  window.addEventListener('message', function(e) {
-    if (e.data && e.data.type === 'MCIT_ACCENT_CHANGE' && e.data.accent) {
-      document.documentElement.style.setProperty('--primary', e.data.accent);
-      document.documentElement.style.setProperty('--gold', e.data.accent);
-      document.documentElement.style.setProperty('--ring', e.data.accent);
-      try { localStorage.setItem('mcit-accent-color', e.data.accent); } catch(_) {}
-    }
-  });
 })();
 `

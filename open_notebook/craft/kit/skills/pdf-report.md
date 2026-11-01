@@ -5,7 +5,7 @@ description: Build the Noir report as a print PDF (ReportLab, figures with real 
 
 # Report skill
 
-Call the Studio tool with feature `report` and a length.
+Call the `generate_document` tool with feature `report` and optional length ('short', 'medium', 'long').
 
 Structure (kept for every report): cover with hero art, contents, at a glance
 (key figures), chapters, findings and recommendations, back cover with end art.

@@ -22,10 +22,10 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
 
 export function StatCard({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-[rgba(245,194,66,0.18)] bg-[rgba(15,18,25,0.75)] backdrop-blur-md p-4 transition-all hover:border-[rgba(245,194,66,0.4)] hover:shadow-[0_4px_20px_rgba(245,194,66,0.08)]">
-      <span className="text-xs font-medium text-[#a0a5b5] tracking-wide uppercase">{label}</span>
-      <span className="text-2xl font-bold tabular-nums text-[#F5C242] tracking-tight">{value}</span>
-      {hint && <span className="text-xs text-[#7d8495]">{hint}</span>}
+    <div className="flex flex-col gap-1 rounded-xl border border-border bg-card p-4">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-2xl font-semibold tabular-nums">{value}</span>
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>
   )
 }

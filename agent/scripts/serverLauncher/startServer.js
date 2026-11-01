@@ -268,6 +268,14 @@ const applyTutRuntimePatches = () => {
               fsSync.writeFileSync(filePath, code, 'utf8');
               console.log(`✅ TuT Patch: Applied generateObject fallback in ${file}`);
             }
+
+            const oldOllamaOpts = 'options:{frequency_penalty:e.frequency_penalty';
+            const newOllamaOpts = 'options:{num_ctx:e.num_ctx||parseInt(process.env.OLLAMA_CONTEXT_LENGTH||process.env.OLLAMA_NUM_CTX||"32768"),frequency_penalty:e.frequency_penalty';
+            if (code.includes(oldOllamaOpts)) {
+              code = code.replace(oldOllamaOpts, newOllamaOpts);
+              fsSync.writeFileSync(filePath, code, 'utf8');
+              console.log(`✅ TuT Patch: Applied Ollama num_ctx option in ${file}`);
+            }
           } catch (_) {}
         }
       }

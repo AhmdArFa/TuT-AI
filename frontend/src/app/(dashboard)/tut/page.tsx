@@ -44,7 +44,7 @@ function TutAgent() {
 
   useEffect(() => {
     if (iframeRef.current?.contentWindow) {
-      const accent = localStorage.getItem('mcit-accent-color') || '#FFEDB9'
+      const accent = localStorage.getItem('mcit-accent-color') || '#4B7BFF'
       iframeRef.current.contentWindow.postMessage(
         { type: 'MCIT_THEME_CHANGE', theme: effectiveTheme },
         '*'
@@ -57,7 +57,7 @@ function TutAgent() {
   }, [effectiveTheme])
 
   const handleIframeLoad = () => {
-    const accent = localStorage.getItem('mcit-accent-color') || '#FFEDB9'
+    const accent = localStorage.getItem('mcit-accent-color') || '#4B7BFF'
     iframeRef.current?.contentWindow?.postMessage(
       { type: 'MCIT_THEME_CHANGE', theme: effectiveTheme },
       '*'

@@ -5,8 +5,7 @@ description: Noir report workbooks with GridCraft. Tut enters the figures the us
 
 # Spreadsheet skill
 
-Call the Studio tool with feature `spreadsheet` and paste the figures in the
-request (or let Tut extract tables from the notebook).
+Call the `generate_document` tool with feature `spreadsheet` and provide data or topics in the instructions.
 
 - Input columns hold the user's figures exactly as given.
 - Computed columns are ALWAYS formulas with blank guards, never typed values:

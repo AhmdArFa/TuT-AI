@@ -5,7 +5,7 @@ description: One-page sketchnote infographics with VectorCraft and Open Doodles 
 
 # Infograph skill
 
-Call the Studio tool with feature `infograph`.
+Call the `generate_document` tool with feature `infograph`.
 
 - Content first: a title, two columns of 3 or 4 numbered blocks (bold heading,
   2 or 3 short lines each) and a one-line verdict.

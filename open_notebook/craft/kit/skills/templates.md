@@ -5,17 +5,16 @@ description: The master template system. Read before any document task: pick the
 
 # Templates (master skill)
 
-Never design from scratch when a template exists. Every document follows the loop:
+To generate any document, call the `generate_document` tool with `feature` ('presentation', 'report', 'spreadsheet', or 'infograph') and your `instructions`.
 
-1. Pick the template for the feature and theme (dark by default, light on request).
-2. Work on a copy, never the master.
-3. Apply the request: new title, data and sections. Keep the template's structure,
-   constant covers, palette and typography.
-4. Audit with the engine: DeckCraft renders every slide, PdfCraft and WordCraft
-   render every page, GridCraft checks every formula, VectorCraft exports the PNG.
-5. Fix every issue and audit again. Stop at zero issues, or after five passes
-   report the remaining issues plainly. Never ship silently.
-6. Deliver: the same file appears in the chat and in Files.
+The backend engine automatically executes the complete generation process:
+1. Picks the approved template for the requested feature and theme.
+2. Clones the template safely on the backend.
+3. Generates all slides, sections, data tables, or charts according to your instructions.
+4. Audits the document with DeckCraft, WordCraft, GridCraft, or VectorCraft.
+5. Saves the resulting file to the user's Files & Docs library and provides ONLYOFFICE preview and download links.
+
+Deliver the returned file links directly to the user in chat.
 
 | Feature | Default template | Engines | Outputs |
 |---|---|---|---|

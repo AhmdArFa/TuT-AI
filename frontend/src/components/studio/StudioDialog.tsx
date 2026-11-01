@@ -162,70 +162,40 @@ export function StudioDialog({ notebookId, open, onOpenChange }: StudioDialogPro
           <DialogDescription>TuT Agent writes from this notebook; the document engines build and check every file.</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-6">
-          {/* Horizontal Squared Preset Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5" role="radiogroup" aria-label="What to create">
-            {presets.map((p) => {
-              const look = LOOK[p.id]
-              const Icon = look.icon
-              const isSelected = preset === p.id
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={isSelected}
-                  disabled={running || !p.ready}
-                  onClick={() => setPreset(p.id)}
-                  className={cn(
-                    'group relative flex flex-col items-center justify-between p-4 rounded-2xl border text-center transition-all duration-200 aspect-square disabled:opacity-50 select-none cursor-pointer',
-                    isSelected
-                      ? 'border-[#D4AF37] bg-gradient-to-b from-[#D4AF37]/15 to-transparent shadow-[0_0_20px_rgba(212,175,55,0.15)] ring-1 ring-[#D4AF37]/50'
-                      : 'border-border/60 bg-muted/20 hover:border-border hover:bg-muted/50'
-                  )}
-                >
-                  <div
+        <div className="grid gap-6 md:grid-cols-[1fr_1fr]">
+          <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="What to create">
+              {presets.map((p) => {
+                const look = LOOK[p.id]
+                const Icon = look.icon
+                const sw = (p.id === preset ? mode : p.modes[0]) === 'dark' ? NOIR_DARK : NOIR_LIGHT
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={preset === p.id}
+                    disabled={running || !p.ready}
+                    onClick={() => setPreset(p.id)}
                     className={cn(
-                      'flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105',
-                      isSelected ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-muted text-muted-foreground group-hover:text-foreground'
+                      'flex flex-col gap-2 rounded-xl border p-3 text-left transition-colors disabled:opacity-50',
+                      preset === p.id ? 'border-primary/60 bg-muted' : 'hover:bg-muted/50'
                     )}
                   >
-                    <Icon className="h-6 w-6" />
-                  </div>
-
-                  <div className="flex flex-col gap-1 items-center">
-                    <span className="text-sm font-semibold tracking-tight text-foreground">{p.name}</span>
-                    <span className="text-[11px] text-muted-foreground line-clamp-1 max-w-[140px]">{p.description}</span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 flex-wrap justify-center">
-                    {p.outputs?.map((out) => (
-                      <span
-                        key={out}
-                        className={cn(
-                          'px-2 py-0.5 rounded-md text-[10px] font-mono uppercase tracking-wider border',
-                          isSelected
-                            ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37]'
-                            : 'bg-background/80 border-border/50 text-muted-foreground'
-                        )}
-                      >
-                        {out}
-                      </span>
-                    ))}
-                  </div>
-
-                  {isSelected && (
-                    <div className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D4AF37] text-black">
-                      <Check className="h-2.5 w-2.5 stroke-[3]" />
+                    <div className="flex h-9 overflow-hidden rounded-md border border-border">
+                      <span className="flex-[3]" style={{ background: sw[0] }} />
+                      <span className="flex-[2]" style={{ background: sw[1] }} />
+                      <span className="flex-1" style={{ background: sw[2] }} />
                     </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-[1fr_1fr]">
-            <div className="flex flex-col gap-5">
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      <Icon className="h-4 w-4 text-primary" /> {p.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{p.description}</span>
+                    {!p.ready && <span className="text-[11px] text-muted-foreground">Needs: {(p.missing || []).join(', ') || 'document engines'}</span>}
+                  </button>
+                )
+              })}
+            </div>
 
             <Field label="Design" hint={template === 'default' ? 'The approved template, generated straight away.' : 'Starts from the approved template, applies your direction, then checks and fixes the file up to five times.'}>
               <Segmented value={template} onChange={setTemplate} disabled={running} options={[{ value: 'default', label: 'Default template' }, { value: 'custom', label: 'Custom' }]} />
@@ -338,7 +308,7 @@ export function StudioDialog({ notebookId, open, onOpenChange }: StudioDialogPro
               </p>
             )}
             {files.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="flex flex-col gap-2">
                 {files.map((f) => (
                   <div key={f.id} className="flex flex-col gap-1">
                     <FileCard file={f} />
@@ -353,7 +323,6 @@ export function StudioDialog({ notebookId, open, onOpenChange }: StudioDialogPro
             {error && <p role="alert" className="rounded-lg border border-destructive/30 px-3 py-2 text-sm text-destructive">{error}</p>}
           </div>
         </div>
-      </div>
       </DialogContent>
     </Dialog>
   )

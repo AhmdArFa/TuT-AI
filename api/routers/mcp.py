@@ -625,9 +625,13 @@ async def skill_read(a: Dict[str, Any]):
 
 
 async def file_info(a: Dict[str, Any]):
-    item = storage.get_file(a["file_id"])
+    fid = str(a.get("file_id") or "").strip()
+    item = storage.get_file(fid)
     if not item:
-        raise ValueError("File not found")
+        raise ValueError(
+            f"File '{fid}' not found in the library. "
+            f"To generate a new document, call 'generate_document' instead."
+        )
     return item.model_dump() | {
         "open_url": _public(f"/files?open={item.id}"),
         "download_url": _public(f"/api/studio/files/{item.id}/download"),
@@ -635,18 +639,20 @@ async def file_info(a: Dict[str, Any]):
 
 
 async def file_rename(a: Dict[str, Any]):
-    item = storage.get_file(a["file_id"])
+    fid = str(a.get("file_id") or "").strip()
+    item = storage.get_file(fid)
     if not item:
-        raise ValueError("File not found")
+        raise ValueError(f"File '{fid}' not found in the library.")
     stem = re.sub(r"[^\w .()-]+", "", a["name"]).strip()[:80] or item.title
     storage.update_meta(item.id, filename=f"{stem}.{item.format}", title=stem)
     return storage.get_file(item.id).model_dump()  # type: ignore[union-attr]
 
 
 async def file_delete(a: Dict[str, Any]):
-    if not storage.delete_file(a["file_id"]):
-        raise ValueError("File not found")
-    return {"deleted": a["file_id"]}
+    fid = str(a.get("file_id") or "").strip()
+    if not storage.delete_file(fid):
+        raise ValueError(f"File '{fid}' not found in the library.")
+    return {"deleted": fid}
 
 
 def _find_slide_title_shape(slide: Any, is_cover: bool = False) -> Any:
@@ -683,9 +689,14 @@ def _find_slide_title_shape(slide: Any, is_cover: bool = False) -> Any:
 
 async def file_read_content(a: Dict[str, Any]):
     """Inspect structured document contents: slides, titles, bullets, notes, paragraphs, tables, or spreadsheet sheets."""
-    item = storage.get_file(a["file_id"])
+    fid = str(a.get("file_id") or "").strip()
+    item = storage.get_file(fid)
     if not item or not item.path.exists():
-        raise ValueError("File not found")
+        raise ValueError(
+            f"File '{fid}' not found in library. "
+            f"Do NOT call file_read_content to create documents. "
+            f"To CREATE a new presentation, document, report, or spreadsheet, call the 'generate_document' tool."
+        )
 
     ext = item.format.lower()
     if ext == "pptx":
@@ -793,9 +804,13 @@ async def file_read_content(a: Dict[str, Any]):
 
 async def file_edit_content(a: Dict[str, Any]):
     """Edit the contents, slides, text, or structure of any file in the library."""
-    item = storage.get_file(a["file_id"])
+    fid = str(a.get("file_id") or "").strip()
+    item = storage.get_file(fid)
     if not item or not item.path.exists():
-        raise ValueError("File not found")
+        raise ValueError(
+            f"File '{fid}' not found in library. You cannot edit a document before it is created. "
+            f"To CREATE a new presentation, document, report, or spreadsheet, call the 'generate_document' tool FIRST."
+        )
 
     action = a.get("action", "update_slide")
     ext = item.format.lower()
@@ -993,9 +1008,43 @@ async def file_edit_content(a: Dict[str, Any]):
 
 async def file_open_editor(a: Dict[str, Any]):
     """Open or get the live ONLYOFFICE collaborative editor URL for any document."""
-    item = storage.get_file(a["file_id"])
+    fid = str(a.get("file_id") or "").strip()
+    item = storage.get_file(fid)
     if not item or not item.path.exists():
-        raise ValueError("File not found")
+        # Smart fallback: if file does not exist, auto-generate the document so the user/agent is never blocked
+        logger.info(f"file_open_editor: '{fid}' not found in library. Attempting auto-generation fallback...")
+        low = fid.lower()
+        if any(ext in low for ext in [".pptx", "presentation", "slide", "deck"]):
+            feat = "presentation"
+        elif any(ext in low for ext in [".xlsx", ".csv", "sheet", "spreadsheet", "grid"]):
+            feat = "spreadsheet"
+        elif any(ext in low for ext in [".png", ".svg", "infograph", "sketch", "blueprint"]):
+            feat = "infograph"
+        elif any(ext in low for ext in [".docx", ".pdf", "report", "doc"]):
+            feat = "report"
+        else:
+            feat = "presentation"
+
+        clean_topic = re.sub(r"\.(pptx|docx|xlsx|png|pdf)$", "", fid, flags=re.IGNORECASE).replace("_", " ").replace("-", " ").strip()
+        if not clean_topic or clean_topic.lower() in ("presentation", "report", "spreadsheet", "infograph", "document", "file"):
+            clean_topic = f"Executive briefing and comprehensive overview"
+
+        try:
+            prod_res = await studio_produce({"feature": feat, "instructions": clean_topic})
+            files = prod_res.get("files") or []
+            if files:
+                new_fid = files[0].get("mcit_file_id") or files[0].get("id")
+                item = storage.get_file(new_fid)
+        except Exception as gen_err:
+            logger.warning(f"file_open_editor auto-generate fallback failed: {gen_err}")
+
+        if not item or not item.path.exists():
+            raise ValueError(
+                f"File '{fid}' not found in library. "
+                f"To CREATE a new presentation, document, report, spreadsheet, or infographic, "
+                f"call the 'generate_document' tool with feature='presentation' (or 'report' / 'spreadsheet' / 'infograph')."
+            )
+
     open_url = _public(f"/files?open={item.id}&edit=true")
     dl_url = _public(f"/api/studio/files/{item.id}/download")
     return {
@@ -1044,10 +1093,12 @@ TOOLS: Dict[str, Dict[str, Any]] = {
     "generate_document": {
         "fn": studio_produce,
         "description": (
-            "Generate any professional document directly in chat: presentation (.pptx + .pdf), "
-            "formal report (.docx + .pdf), spreadsheet (.xlsx), or sketchnote infographic (.png + .pdf). "
+            "PRIMARY TOOL TO CREATE/GENERATE DOCUMENTS: Generate any professional document directly in chat: "
+            "presentation (.pptx + .pdf), formal report (.docx + .pdf), spreadsheet (.xlsx), or sketchnote infographic (.png + .pdf). "
             "The file is generated immediately and automatically saved to your Files & Docs page in Tut Agent. "
-            "ALWAYS call this tool to generate presentations, decks, documents, reports, or spreadsheets directly in chat. "
+            "ALWAYS call this tool FIRST whenever the user asks to generate, create, make, build, draft, or export any presentation, "
+            "deck, document, report, spreadsheet, or infographic. "
+            "Do NOT call file_open_editor, file_edit_content, or skills_list before generating — call this tool directly! "
             "You have full creative freedom: choose slide_count (4 to 30), theme_preset ('red_white', 'royal_navy', 'emerald', 'dark', 'light', 'custom'), "
             "custom colors (primary_color, accent_color, bg_color, text_color), and design_style ('bold', 'corporate', 'creative', 'minimalist', 'academic'). "
             "Do NOT say you sent a request to Studio or ask the user to wait. Deliver the preview and download links directly."
@@ -1153,11 +1204,12 @@ TOOLS: Dict[str, Dict[str, Any]] = {
     "studio_produce": {
         "fn": studio_produce,
         "description": (
-            "Generate any professional document directly in chat: presentation (.pptx + .pdf), "
-            "formal report (.docx + .pdf), spreadsheet (.xlsx), or sketchnote infographic (.png + .pdf). "
+            "PRIMARY TOOL TO CREATE/GENERATE DOCUMENTS: Generate any professional document directly in chat: "
+            "presentation (.pptx + .pdf), formal report (.docx + .pdf), spreadsheet (.xlsx), or sketchnote infographic (.png + .pdf). "
             "The file is generated immediately and automatically saved to your Files & Docs page in Tut Agent. "
-            "ALWAYS use this tool whenever the user asks to create, draft, build, generate, or export a file, "
+            "ALWAYS call this tool FIRST whenever the user asks to create, draft, build, generate, or export a file, "
             "presentation, slide deck, report, spreadsheet, or infographic in chat. "
+            "Do NOT call file_open_editor, file_edit_content, or skills_list before generating — call this tool directly! "
             "Deliver the preview and download links directly to the user."
         ),
         "schema": _schema(
@@ -1395,27 +1447,27 @@ TOOLS: Dict[str, Dict[str, Any]] = {
     },
     "skills_list": {
         "fn": skills_list,
-        "description": "List the MCIT document skills (templates, presentation, report, Word, infograph, spreadsheet, figures, design helper).",
+        "description": "Optional reference list of MCIT document styling guides. NOTE: To create or generate documents, call 'generate_document' directly; do NOT call skills_list first.",
         "schema": _schema({}, []),
     },
     "skill_read": {
         "fn": skill_read,
-        "description": "Read one MCIT document skill before producing that kind of file.",
+        "description": "Read an optional document styling guide for reference. NOTE: To create or generate documents, call 'generate_document' directly; do NOT call skill_read first.",
         "schema": _schema({"name": S}, ["name"]),
     },
     "file_info": {
         "fn": file_info,
-        "description": "Details and links for one file in the user's library.",
+        "description": "Details and links for an EXISTING file in the library. Do NOT call this tool to generate new files; use 'generate_document' instead.",
         "schema": _schema({"file_id": S}, ["file_id"]),
     },
     "file_read_content": {
         "fn": file_read_content,
-        "description": "Inspect and read the structured contents of any presentation (.pptx), report (.docx), or spreadsheet (.xlsx) in the user's library (slides, titles, paragraphs, tables, sheets).",
+        "description": "Inspect and read the structured contents of an EXISTING presentation (.pptx), report (.docx), or spreadsheet (.xlsx) in the user's library. NOTE: To create new files, call 'generate_document'.",
         "schema": _schema({"file_id": S}, ["file_id"]),
     },
     "file_edit_content": {
         "fn": file_edit_content,
-        "description": "Directly edit or modify any presentation (.pptx), report (.docx), or spreadsheet (.xlsx) in the user's library. Modify slide titles, bullets, notes, add/remove slides, update document paragraphs, or edit spreadsheet cells. Updates the file and keeps ONLYOFFICE viewer in sync.",
+        "description": "Directly edit or modify an EXISTING presentation (.pptx), report (.docx), or spreadsheet (.xlsx) in the user's library. Modify slide titles, bullets, notes, add/remove slides, update document paragraphs, or edit spreadsheet cells. Updates the file and keeps ONLYOFFICE viewer in sync. NOTE: To create a new file from scratch, call 'generate_document'.",
         "schema": _schema(
             {
                 "file_id": S,
@@ -1452,7 +1504,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
     },
     "file_open_editor": {
         "fn": file_open_editor,
-        "description": "Open or get the live ONLYOFFICE collaborative editor link for any document in the user's library, allowing real-time in-browser visual editing side-by-side with the agent.",
+        "description": "Open or get the live ONLYOFFICE collaborative editor link for an EXISTING document in the user's library, allowing real-time in-browser visual editing side-by-side with the agent. NOTE: To CREATE a new document, call 'generate_document' instead.",
         "schema": _schema({"file_id": S}, ["file_id"]),
     },
     "file_rename": {
@@ -1487,7 +1539,16 @@ async def _handle(msg: Dict[str, Any]) -> Dict[str, Any] | None:
                 "protocolVersion": PROTOCOL,
                 "capabilities": {"tools": {"listChanged": False}},
                 "serverInfo": {"name": "tut-ai", "title": "TuT AI", "version": "1.0"},
-                "instructions": "Tools for the user's TuT AI notebooks, files, Studio and the Craft document engines.",
+                "instructions": (
+                    "DOCUMENT GENERATION RULES FOR TUT AGENT:\n"
+                    "1. When the user asks to generate, create, make, build, draft, or export ANY presentation, "
+                    "slide deck, report, Word document, spreadsheet, or infographic: ALWAYS call the 'generate_document' "
+                    "tool FIRST as your primary action.\n"
+                    "2. Do NOT call 'file_open_editor', 'file_edit_content', 'file_read_content', or 'file_info' to create files — "
+                    "those tools are strictly for files that already exist in the user's library.\n"
+                    "3. Do NOT call 'skills_list' or 'skill_read' when generating documents — call 'generate_document' directly.\n"
+                    "4. After 'generate_document' finishes, deliver the returned Markdown preview and download links directly to the user in chat.\n"
+                ),
             },
         )
     if method == "ping":
@@ -1507,17 +1568,20 @@ async def _handle(msg: Dict[str, Any]) -> Dict[str, Any] | None:
             },
         )
     if method == "tools/call":
-        tool = TOOLS.get(params.get("name", ""))
+        tool_name = params.get("name", "")
+        tool_args = params.get("arguments") or {}
+        logger.info(f"MCP tool call: {tool_name} with args: {tool_args}")
+        tool = TOOLS.get(tool_name)
         if not tool:
-            return _err(rid, -32602, "Unknown tool")
+            return _err(rid, -32602, f"Unknown tool: {tool_name}")
         try:
-            data = await tool["fn"](params.get("arguments") or {})
+            data = await tool["fn"](tool_args)
             text = data if isinstance(data, str) else json.dumps(data, default=str)
             return _ok(
                 rid, {"content": [{"type": "text", "text": text}], "isError": False}
             )
         except Exception as e:
-            logger.info(f"MCP tool {params.get('name')} failed: {type(e).__name__}")
+            logger.warning(f"MCP tool {tool_name} failed: {type(e).__name__}: {e}")
             return _ok(
                 rid,
                 {

@@ -38,6 +38,8 @@ x-tut-env: &tut-env
   ENABLED_OLLAMA: "1"
   OLLAMA_PROXY_URL: http://host.docker.internal:11434
   OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-gemma4:e4b}
+  OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-32768}
+  OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-32768}
   MCIT_STUDIO_MODEL: ${OLLAMA_CHAT_MODEL:-gemma4:e4b}
   MCP_TOOL_TIMEOUT: "600000"
   # One login: Tut Agent signs users in through MCIT AI (OpenID Connect)
@@ -171,6 +173,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment: *tut-env
+    volumes:
+      - ./agent/scripts/serverLauncher/startServer.js:/app/startServer.js
     depends_on:
       tut-postgres:
         condition: service_healthy
